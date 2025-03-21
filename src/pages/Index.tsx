@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -14,21 +15,24 @@ import LogTable from '@/components/LogTable';
 import LogTimeline from '@/components/LogTimeline';
 import LogSearch from '@/components/LogSearch';
 import TransitionLayout from '@/components/TransitionLayout';
+import TranscriptionInput from '@/components/TranscriptionInput';
+import NetworkVisualization from '@/components/NetworkVisualization';
 
 const Index = () => {
-  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'network'>('dashboard');
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>(mockLogData);
   const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(mockLogData);
   
   useEffect(() => {
     if (selectedLocation) {
-      setFilteredLogs(mockLogData.filter(log => log.location === selectedLocation));
+      setFilteredLogs(logs.filter(log => log.location === selectedLocation));
     } else {
-      setFilteredLogs(mockLogData);
+      setFilteredLogs(logs);
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, logs]);
   
   const statusCounts = getStatusCounts();
   const categoryCounts = getCategoryCounts();
@@ -63,6 +67,15 @@ const Index = () => {
     }
   };
   
+  const handleLogsGenerated = (newLogs: LogEntry[]) => {
+    setLogs(prevLogs => {
+      // Merge new logs with existing logs, avoiding duplicates by ID
+      const existingIds = new Set(prevLogs.map(log => log.id));
+      const uniqueNewLogs = newLogs.filter(log => !existingIds.has(log.id));
+      return [...prevLogs, ...uniqueNewLogs];
+    });
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <LogHeader 
@@ -72,6 +85,8 @@ const Index = () => {
       />
       
       <main className="flex-1 container mx-auto px-4 py-8">
+        <TranscriptionInput onLogsGenerated={handleLogsGenerated} />
+        
         <AnimatePresence mode="wait">
           {activeView === 'dashboard' && (
             <motion.div
@@ -276,6 +291,45 @@ const Index = () => {
               <LogTimeline logs={filteredLogs} onSelectLog={setSelectedLog} />
             </motion.div>
           )}
+          
+          {activeView === 'network' && (
+            <motion.div
+              key="network"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-medium flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  Network Analysis
+                  {selectedLocation && (
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Filtered by: {selectedLocation}
+                    </span>
+                  )}
+                </h2>
+                {selectedLocation && (
+                  <button 
+                    onClick={() => setSelectedLocation(null)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </div>
+              
+              <NetworkVisualization logs={filteredLogs} />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
       
@@ -411,7 +465,7 @@ const Index = () => {
       <LogSearch 
         isOpen={searchOpen} 
         onClose={() => setSearchOpen(false)} 
-        logs={mockLogData}
+        logs={logs}
         onSelectLog={setSelectedLog}
       />
     </div>

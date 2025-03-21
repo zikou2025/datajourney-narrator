@@ -1,102 +1,138 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Search, BarChart, MapPin, LayoutList, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Calendar, MapPin, Clipboard, BarChart, Search, X, Menu } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useMobile } from '@/hooks/use-mobile';
 
 interface LogHeaderProps {
-  activeView: 'dashboard' | 'map' | 'list' | 'timeline';
-  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline') => void;
+  activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'network';
+  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline' | 'network') => void;
   setSearchOpen: (open: boolean) => void;
 }
 
-const LogHeader: React.FC<LogHeaderProps> = ({ 
-  activeView, 
-  setActiveView,
-  setSearchOpen 
-}) => {
+const LogHeader: React.FC<LogHeaderProps> = ({ activeView, setActiveView, setSearchOpen }) => {
+  const isMobile = useMobile();
+  
+  const navigationItems = [
+    { view: 'dashboard', label: 'Dashboard', icon: <BarChart className="w-5 h-5" /> },
+    { view: 'map', label: 'Map View', icon: <MapPin className="w-5 h-5" /> },
+    { view: 'list', label: 'List View', icon: <Clipboard className="w-5 h-5" /> },
+    { view: 'timeline', label: 'Timeline', icon: <Calendar className="w-5 h-5" /> },
+    { view: 'network', label: 'Network', icon: (
+      <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+      </svg>
+    ) },
+  ];
+  
+  const renderNavigation = () => (
+    <nav className="flex items-center space-x-1">
+      {navigationItems.map((item) => (
+        <button
+          key={item.view}
+          onClick={() => setActiveView(item.view as any)}
+          className={`flex items-center p-2 rounded-md transition-colors ${
+            activeView === item.view
+              ? 'text-primary bg-primary/10'
+              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+          }`}
+        >
+          {item.icon}
+          <span className="ml-2 hidden md:inline">{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+  
   return (
-    <header className="w-full sticky top-0 z-50 glass border-b backdrop-blur-lg">
-      <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between">
-        <div className="flex items-center mb-4 md:mb-0">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mr-4"
-          >
-            <FileText className="w-6 h-6 text-primary" />
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-2xl font-light tracking-tight"
-          >
-            <span className="font-medium">Data</span>Journey
-          </motion.h1>
+    <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="flex items-center">
+          <h1 className="text-xl font-medium flex items-center mr-8">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-6 h-6 mr-2 text-primary"
+            >
+              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+              <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+              <path d="M12 17v-6" />
+              <path d="M9 14l3 3 3-3" />
+            </svg>
+            Activity Logger
+          </h1>
+          
+          {!isMobile && renderNavigation()}
         </div>
         
-        <div className="flex items-center space-x-1">
-          <ViewButton 
-            icon={<BarChart className="w-4 h-4" />}
-            label="Dashboard"
-            isActive={activeView === 'dashboard'}
-            onClick={() => setActiveView('dashboard')}
-          />
-          <ViewButton 
-            icon={<MapPin className="w-4 h-4" />}
-            label="Map"
-            isActive={activeView === 'map'}
-            onClick={() => setActiveView('map')}
-          />
-          <ViewButton 
-            icon={<LayoutList className="w-4 h-4" />}
-            label="List"
-            isActive={activeView === 'list'}
-            onClick={() => setActiveView('list')}
-          />
-          <ViewButton 
-            icon={<Search className="w-4 h-4" />}
-            label="Search"
-            isActive={false}
+        <div className="flex items-center">
+          <button
             onClick={() => setSearchOpen(true)}
-          />
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          
+          {isMobile && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="ml-2 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                  <Menu className="w-5 h-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[240px] sm:w-[300px]">
+                <div className="py-4">
+                  <div className="flex items-center mb-6">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-6 h-6 mr-2 text-primary"
+                    >
+                      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                      <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+                      <path d="M12 17v-6" />
+                      <path d="M9 14l3 3 3-3" />
+                    </svg>
+                    <h2 className="text-xl font-medium">Activity Logger</h2>
+                  </div>
+                  
+                  <nav className="flex flex-col space-y-1">
+                    {navigationItems.map((item) => (
+                      <button
+                        key={item.view}
+                        onClick={() => setActiveView(item.view as any)}
+                        className={`flex items-center p-3 rounded-md transition-colors ${
+                          activeView === item.view
+                            ? 'text-primary bg-primary/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        }`}
+                      >
+                        {item.icon}
+                        <span className="ml-2">{item.label}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </div>
     </header>
-  );
-};
-
-interface ViewButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-}
-
-const ViewButton: React.FC<ViewButtonProps> = ({ icon, label, isActive, onClick }) => {
-  return (
-    <button 
-      onClick={onClick}
-      className={cn(
-        "relative px-3 py-2 rounded-full text-sm flex items-center transition-all duration-300",
-        isActive 
-          ? "bg-primary text-white shadow-md" 
-          : "text-foreground/70 hover:bg-secondary"
-      )}
-    >
-      <span className="mr-2">{icon}</span>
-      <span>{label}</span>
-      {isActive && (
-        <motion.div
-          layoutId="active-pill"
-          className="absolute inset-0 bg-primary rounded-full -z-10"
-          initial={false}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-        />
-      )}
-    </button>
   );
 };
 
