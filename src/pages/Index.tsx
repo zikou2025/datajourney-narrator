@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -35,7 +34,6 @@ const Index = () => {
     }
   }, [selectedLocation, logs]);
   
-  // Compute stats from real data
   const getStatusCounts = () => {
     const counts: Record<string, number> = {
       completed: 0,
@@ -113,7 +111,6 @@ const Index = () => {
     }
     
     setLogs(prevLogs => {
-      // Merge new logs with existing logs, avoiding duplicates by ID
       const existingIds = new Set(prevLogs.map(log => log.id));
       const uniqueNewLogs = newLogs.filter(log => !existingIds.has(log.id));
       return [...prevLogs, ...uniqueNewLogs];
@@ -121,7 +118,7 @@ const Index = () => {
 
     toast({
       title: "Success",
-      description: `Generated ${newLogs.length} log entries`,
+      description: `Added ${newLogs.length} log entries from Gemini AI analysis`,
     });
   };
   

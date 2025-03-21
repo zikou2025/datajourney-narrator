@@ -176,6 +176,8 @@ async function enhanceLogsWithGemini(text: string, fallbackLogs: LogEntry[]): Pr
             status: logItem.status || 'completed',
             notes: logItem.notes || '',
             referenceId: `REF-${Date.now().toString().slice(-5)}-${index}`,
+            // Add location coordinates for map visualization
+            coordinates: getRandomCoordinatesForLocation(logItem.location)
           }
         })
         
@@ -189,6 +191,37 @@ async function enhanceLogsWithGemini(text: string, fallbackLogs: LogEntry[]): Pr
     console.error('Error calling Gemini API:', error)
     return fallbackLogs
   }
+}
+
+// Helper function to generate realistic coordinates for locations
+function getRandomCoordinatesForLocation(location: string): [number, number] {
+  // Default coordinates (Austin, TX area)
+  const baseCoordinates: Record<string, [number, number]> = {
+    "Massey's Test Facility": [-97.7431, 30.2672],
+    "Sanchez Site": [-97.8331, 30.1872],
+    "Delta Junction": [-97.6531, 30.3472],
+    "North Ridge": [-97.7231, 30.4272],
+    "West Portal": [-97.9131, 30.2472],
+    "South Basin": [-97.7631, 30.1272],
+    "East Quarry": [-97.6131, 30.2772],
+    "Central Processing": [-97.7731, 30.2972]
+  };
+  
+  // If location is in our predefined list, use those coordinates with a slight random offset
+  if (location in baseCoordinates) {
+    const [lng, lat] = baseCoordinates[location];
+    // Add small random offset (up to ~1km)
+    return [
+      lng + (Math.random() - 0.5) * 0.01,
+      lat + (Math.random() - 0.5) * 0.01
+    ];
+  }
+  
+  // For unknown locations, generate coordinates in the general area
+  return [
+    -97.7431 + (Math.random() - 0.5) * 0.1,  // Austin, TX longitude with random offset
+    30.2672 + (Math.random() - 0.5) * 0.1    // Austin, TX latitude with random offset
+  ];
 }
 
 // Original rule-based processing as fallback
@@ -358,6 +391,9 @@ async function processTranscription(text: string): Promise<LogEntry[]> {
       } else if (paragraph.toLowerCase().includes("cancel") || paragraph.toLowerCase().includes("abort")) {
         status = "cancelled";
       }
+
+      // Generate random coordinates for map visualization
+      const coordinates: [number, number] = getRandomCoordinatesForLocation(location);
       
       // Generate a log entry
       logs.push({
@@ -373,6 +409,7 @@ async function processTranscription(text: string): Promise<LogEntry[]> {
         status,
         notes: paragraph,
         referenceId: `REF-${Date.now().toString().slice(-5)}-${i}`,
+        coordinates
       });
     } catch (error) {
       console.error("Error processing paragraph:", error);

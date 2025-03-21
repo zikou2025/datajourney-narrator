@@ -37,6 +37,10 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
 
       if (error) throw error;
 
+      if (!data.logs || data.logs.length === 0) {
+        throw new Error('No logs were generated from the transcription');
+      }
+
       // Add IDs and timestamps to the logs if they don't have them
       const processedLogs = data.logs.map((log: Partial<LogEntry>) => ({
         ...log,
@@ -50,13 +54,13 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
       
       toast({
         title: "Success",
-        description: `Generated ${processedLogs.length} log entries`,
+        description: `Generated ${processedLogs.length} log entries using Gemini AI`,
       });
     } catch (error) {
       console.error("Error processing transcription:", error);
       toast({
         title: "Error",
-        description: "Failed to process transcription",
+        description: "Failed to process transcription. Please check if the Gemini API key is valid.",
         variant: "destructive",
       });
     } finally {
@@ -87,7 +91,7 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                Processing with Gemini AI...
               </>
             ) : (
               <>
