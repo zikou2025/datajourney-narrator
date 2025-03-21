@@ -172,7 +172,7 @@ async function enhanceLogsWithGemini(text: string): Promise<LogEntry[]> {
     Extract as many distinct activities as possible from the text. Make reasonable inferences when information is implied but not explicitly stated. DO NOT include any explanations or text outside the JSON array.
     `
     
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
