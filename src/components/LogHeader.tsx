@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Calendar, MapPin, Clipboard, BarChart, Search, X, Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LogHeaderProps {
   activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'network';
@@ -11,7 +10,7 @@ interface LogHeaderProps {
 }
 
 const LogHeader: React.FC<LogHeaderProps> = ({ activeView, setActiveView, setSearchOpen }) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   const navigationItems = [
     { view: 'dashboard', label: 'Dashboard', icon: <BarChart className="w-5 h-5" /> },
