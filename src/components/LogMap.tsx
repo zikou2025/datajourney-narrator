@@ -71,7 +71,7 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation, 
       
       // Replace with your Mapbox token - for demo purposes only
       // In production, use env variables or backend authentication
-      mapboxgl.accessToken = 'pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xhYmZlcjc5MDduNTN3bXZ1cjlscmdjcyJ9.3J4I-XMofGTNJ-5uZvLRaQ';
+      mapboxgl.accessToken = 'pk.eyJ1IjoiemFjazk0MDAiLCJhIjoiY2tyaWRyb3d3Njg5OTJvbnhvanFldHlmMCJ9.2Sdj3kBXnQBvWf9mFndDww';
       
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
