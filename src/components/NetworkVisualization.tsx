@@ -316,10 +316,11 @@ const NetworkLink = React.memo(
     const adjustedTargetX = target.x! - targetOffsetX;
     const adjustedTargetY = target.y! - targetOffsetY;
 
+    // 1. Fixed gradient ID generation
     const gradientId = `link-gradient-${source.id}-${target.id}`.replace(
       /[^a-zA-Z0-9]/g,
       '-'
-    ); // Unique gradient ID
+    );
     return (
       <path
         className="link"
@@ -399,6 +400,18 @@ const Network = React.memo(
           ]),
       []
     );
+
+    const [nodeMap, setNodeMap] = useState<Record<string, Node>>({});
+
+    // Make sure nodeMap is updated properly in Network component
+    useEffect(() => {
+      // Update nodeMap when nodes change
+      const updatedNodeMap = nodes.reduce((acc, node) => {
+        acc[node.id] = node;
+        return acc;
+      }, {});
+      setNodeMap(updatedNodeMap);
+    }, [nodes]);
 
     useEffect(() => {
       if (!svgRef.current || !containerRef.current) return;
@@ -509,47 +522,57 @@ const Network = React.memo(
         .attr('fill', '#ccc')
         .attr('stroke-opacity', 0.6);
 
-      // Define gradients for each link
-      const gradients = defs
-        .selectAll('linearGradient')
-        .data(links, (d: any) => `link-gradient-${d.source}-${d.target}`)
-        .enter()
-        .append('linearGradient')
-        .attr('id', (d: any) => {
-          const source = nodes.find(n => n.id === d.source)?.type || 'log';
-          const target = nodes.find(n => n.id === d.target)?.type || 'log';
-          return `link-gradient-${source}-${target}`;
-        })
-        .attr('gradientUnits', 'userSpaceOnUse');
+      // 2. Move gradient definitions to the main defs section:
+      links.forEach(link => {
+        const sourceType = nodes.find(n => n.id === link.source)?.type || 'log';
+        const targetType = nodes.find(n => n.id === link.target)?.type || 'log';
+        const gradientId = `link-gradient-${link.source}-${link.target}`.replace(/[^a-zA-Z0-9]/g, '-');
 
-      gradients
-        .append('stop')
-        .attr('offset', '0%')
-        .attr(
-          'stop-color',
-          (d: any) =>
-            colorScale(nodes.find(n => n.id === d.source)?.type || 'log') || '#ccc'
-        );
-      gradients
-        .append('stop')
-        .attr('offset', '100%')
-        .attr(
-          'stop-color',
-          (d: any) =>
-            colorScale(nodes.find(n => n.id === d.target)?.type || 'log') || '#ccc'
-        );
+        const gradient = defs.append('linearGradient')
+          .attr('id', gradientId)
+          .attr('gradientUnits', 'userSpaceOnUse');
+
+        gradient.append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', colorScale(sourceType));
+
+        gradient.append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', colorScale(targetType));
+      });
 
       // Create container for links
       const linkGroup = zoomContainer.append('g').attr('class', 'links');
-      const nodeMap: Record<string, Node> = nodes.reduce((acc, node) => {
-        acc[node.id] = node;
-        return acc;
-      }, {});
 
       // Create container for nodes
       const nodeGroup = zoomContainer.append('g').attr('class', 'nodes');
 
       // Create node elements
+      const drag = (simulation: any) => { // 3. Fix simulation reference in drag function
+        const dragstarted = (event: any, d: any) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        };
+
+        const dragged = (event: any, d: any) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        };
+
+        const dragended = (event: any, d: any) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        };
+
+        return d3
+          .drag()
+          .on('start', dragstarted)
+          .on('drag', dragged)
+          .on('end', dragended);
+      };
+
       const d3Nodes = nodeGroup
         .selectAll('.node')
         .data(nodes, (d: any) => d.id) // Key function for data join
@@ -558,7 +581,7 @@ const Network = React.memo(
             const g = enter
               .append('g')
               .attr('class', 'node')
-              .call(drag(simulationRef));
+              .call(drag(simulationRef.current)); // Pass the current simulation to drag
 
             // Add node background
             g.append('circle')
@@ -586,46 +609,6 @@ const Network = React.memo(
         .on('click', (event: any, d: Node) => {
           onNodeClick(d.id);
         });
-
-      const drag = (simulationRef: any) => {
-        const dragstarted = (event: any, d: any) => {
-          if (!event.active) simulationRef.current.alphaTarget(0.3).restart();
-          d.fx = d.x;
-          d.fy = d.y;
-        };
-
-        const dragged = (event: any, d: any) => {
-          d.fx = event.x;
-          d.fy = event.y;
-        };
-
-        const dragended = (event: any, d: any) => {
-          if (!event.active) simulationRef.current.alphaTarget(0);
-          d.fx = null;
-          d.fy = null;
-        };
-
-        return d3
-          .drag()
-          .on('start', dragstarted)
-          .on('drag', dragged)
-          .on('end', dragended);
-      };
-
-      // Key function for data join
-      const d3Links = linkGroup
-        .selectAll('.link')
-        .data(links, (d: any) => `${d.source}-${d.target}`)
-        .join(
-          enter => {
-            const link = enter.append('path');
-            return link;
-          },
-          update => update,
-          exit => exit.remove()
-        )
-        .attr('class', 'link')
-        .attr('marker-end', 'url(#arrowhead)');
 
       // Create a force simulation
       const simulation = d3
@@ -685,6 +668,11 @@ const Network = React.memo(
           d3Nodes.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
 
           // Update link paths
+          const nodeMap = nodes.reduce((acc: any, node: any) => {
+            acc[node.id] = node;
+            return acc;
+          }, {});
+
           d3Links.attr('d', (d: any) => {
             const source = nodeMap[d.source];
             const target = nodeMap[d.target];
@@ -717,6 +705,11 @@ const Network = React.memo(
 
       // Store simulation for updates
       simulationRef.current = simulation;
+
+      // 5. Improve auto-zoom timing:
+      // simulation.on("end", autoZoom);
+      //  Or use a longer timeout
+       setTimeout(autoZoom, 1000);
 
       const autoZoom = () => {
         if (
@@ -765,7 +758,6 @@ const Network = React.memo(
           );
       };
 
-      setTimeout(autoZoom, 100);
       // Pause or resume simulation
       if (simulationPaused) {
         simulation.stop();
@@ -782,18 +774,8 @@ const Network = React.memo(
       links,
       showNodeLabels,
       colorMode,
-      nodeConnectivity,
-      searchTerm,
       simulationPaused,
-      selectedNodeId,
     ]);
-
-    const nodeMap: Record<string, Node> = useMemo(() => {
-      return nodes.reduce((acc, node) => {
-        acc[node.id] = node;
-        return acc;
-      }, {});
-    }, [nodes]);
 
     return (
       <div
@@ -1192,6 +1174,8 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
           type: 'location',
           size: 35,
           icon: typeToEmoji.location,
+          x: 0,  // Initialize x
+          y: 0   // Initialize y
         });
       }
 
@@ -1205,6 +1189,8 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
           type: 'activity',
           size: 30,
           icon: typeToEmoji.activity,
+          x: 0,  // Initialize x
+          y: 0   // Initialize y
         });
       }
 
@@ -1218,6 +1204,8 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
           type: 'resource',
           size: 25,
           icon: typeToEmoji.resource,
+          x: 0,  // Initialize x
+          y: 0   // Initialize y
         });
       }
 
@@ -1231,6 +1219,8 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
           type: 'equipment',
           size: 28,
           icon: typeToEmoji.equipment,
+          x: 0,  // Initialize x
+          y: 0   // Initialize y
         });
       }
 
@@ -1244,6 +1234,8 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
           type: 'personnel',
           size: 28,
           icon: typeToEmoji.personnel,
+          x: 0,  // Initialize x
+          y: 0   // Initialize y
         });
       }
     });
@@ -1258,8 +1250,8 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
         type: 'log',
         size: 20,
         icon: typeToEmoji.log,
-        x: 0,
-        y: 0,
+        x: 0,  // Initialize x
+        y: 0   // Initialize y
       };
       allNodes.push(logNode);
 
@@ -1362,8 +1354,12 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
       steps.push({ nodes: stepNodes, links: stepLinks });
     }
     setStorySteps(steps);
-    setNodes(steps[0].nodes);
-    setLinks(steps[0].links);
+    // Correct initial state
+    if (steps.length > 0) {
+        setNodes(steps[0].nodes);
+        setLinks(steps[0].links);
+    }
+
   }, [logs, networkData]);
 
   const nodeConnectivity = useMemo(() => {
@@ -1419,8 +1415,11 @@ const NetworkVisualization: React.FC<NetworkVisualizationProps> = ({ logs }) => 
     if (state.isAnimating && state.currentStep < storySteps.length - 1) {
       const timer = setTimeout(() => {
         dispatch({ type: 'SET_STEP', payload: state.currentStep + 1 });
-        setNodes(storySteps[state.currentStep + 1].nodes);
-        setLinks(storySteps[state.currentStep + 1].links);
+        // 6. Fix step update synchronization
+        if (storySteps[state.currentStep + 1]) {
+            setNodes(storySteps[state.currentStep + 1].nodes);
+            setLinks(storySteps[state.currentStep + 1].links);
+        }
       }, 2000);
 
       return () => clearTimeout(timer);
