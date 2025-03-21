@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CardContent, Card } from "@/components/ui/card";
-import { Clock, FileText, Loader2 } from "lucide-react";
+import { Clock, FileText, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogEntry } from "@/lib/types";
@@ -30,6 +30,11 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
 
     setIsProcessing(true);
     try {
+      toast({
+        title: "Processing",
+        description: "Analyzing transcription with Gemini AI...",
+      });
+      
       // Call the Supabase Edge Function to process transcription
       const { data, error } = await supabase.functions.invoke('process-transcription', {
         body: { text: transcription }
@@ -56,6 +61,9 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
         title: "Success",
         description: `Generated ${processedLogs.length} log entries using Gemini AI`,
       });
+      
+      // Clear the transcription field after successful processing
+      setTranscription('');
     } catch (error) {
       console.error("Error processing transcription:", error);
       toast({
@@ -87,6 +95,7 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
           <Button 
             onClick={processTranscription} 
             disabled={isProcessing || !transcription.trim()}
+            className="relative group"
           >
             {isProcessing ? (
               <>
@@ -95,10 +104,14 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
               </>
             ) : (
               <>
-                <Clock className="mr-2 h-4 w-4" />
-                Generate Logs
+                <Sparkles className="mr-2 h-4 w-4 group-hover:text-yellow-300 transition-colors" />
+                Generate Logs with Gemini AI
               </>
             )}
+            <span className="absolute -top-1 -right-1 flex h-3 w-3 group-hover:opacity-100 opacity-0 transition-opacity">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+            </span>
           </Button>
         </div>
       </CardContent>
