@@ -1,6 +1,7 @@
+
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { getLocationGroups } from '@/lib/mockData';
+import { LogEntry } from '@/lib/types';
 import { Maximize, Minimize, MapPin } from 'lucide-react';
 import TransitionLayout from './TransitionLayout';
 import mapboxgl from 'mapbox-gl';
@@ -9,12 +10,54 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 interface LogMapProps {
   selectedLocation: string | null;
   setSelectedLocation: (location: string | null) => void;
+  logs: LogEntry[];
 }
 
-const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }) => {
+const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation, logs }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
+  
+  // Get location data from real logs
+  const getLocationGroups = () => {
+    const locationMap = new Map<string, { count: number, coordinates?: [number, number] }>();
+    
+    // Mock coordinates for locations if not provided in logs
+    const defaultCoordinates: Record<string, [number, number]> = {
+      "Massey's Test Facility": [-97.7431, 30.2672],
+      "Sanchez Site": [-97.8331, 30.1872],
+      "Delta Junction": [-97.6531, 30.3472],
+      "North Ridge": [-97.7231, 30.4272],
+      "West Portal": [-97.9131, 30.2472],
+      "South Basin": [-97.7631, 30.1272],
+      "East Quarry": [-97.6131, 30.2772],
+      "Central Processing": [-97.7731, 30.2972]
+    };
+    
+    logs.forEach(log => {
+      if (log.location) {
+        const locationData = locationMap.get(log.location) || { count: 0 };
+        locationData.count += 1;
+        
+        // Use coordinates from log or default coordinates
+        if (log.coordinates) {
+          locationData.coordinates = log.coordinates;
+        } else if (defaultCoordinates[log.location]) {
+          locationData.coordinates = defaultCoordinates[log.location];
+        }
+        
+        locationMap.set(log.location, locationData);
+      }
+    });
+    
+    return Array.from(locationMap.entries()).map(([location, data]) => ({
+      location,
+      count: data.count,
+      coordinates: data.coordinates
+    }));
+  };
+  
+  const locations = getLocationGroups();
   
   useEffect(() => {
     // Load the Mapbox script dynamically
@@ -48,8 +91,6 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
       
       // Add location markers
       mapRef.current.on('load', () => {
-        const locations = getLocationGroups();
-        
         locations.forEach(location => {
           if (location.coordinates) {
             const el = document.createElement('div');
@@ -110,7 +151,7 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
       document.head.removeChild(script);
       document.head.removeChild(link);
     };
-  }, [selectedLocation]);
+  }, [selectedLocation, locations]);
   
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -119,6 +160,20 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
       mapRef.current?.resize();
     }, 300);
   };
+  
+  // Show a placeholder if no locations available
+  if (locations.length === 0) {
+    return (
+      <TransitionLayout animation="fade" className="w-full">
+        <div className="glass rounded-xl p-8 text-center">
+          <h2 className="text-xl font-medium mb-4">No Location Data Available</h2>
+          <p className="text-muted-foreground">
+            Enter a transcription above to generate activity logs with location data.
+          </p>
+        </div>
+      </TransitionLayout>
+    );
+  }
   
   return (
     <TransitionLayout animation="fade" className="w-full">
@@ -135,7 +190,7 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
             <div className="absolute top-4 left-4 max-w-xs glass rounded-lg p-4 max-h-[400px] overflow-y-auto">
               <h3 className="text-sm font-medium mb-3">Locations</h3>
               <div className="space-y-2">
-                {getLocationGroups().map((location, index) => (
+                {locations.map((location, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedLocation(location.location)}
@@ -177,7 +232,7 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
                 </p>
               </div>
               <div className="flex space-x-3">
-                {getLocationGroups().map((location, index) => (
+                {locations.map((location, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedLocation(location.location)}

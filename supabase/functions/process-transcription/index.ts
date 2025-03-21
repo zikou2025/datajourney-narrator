@@ -39,9 +39,8 @@ serve(async (req) => {
       throw new Error('Transcription text is required')
     }
 
-    // Use a more sophisticated API to analyze the text
-    // For now, we'll use a simplified rule-based approach
-    const logs = await processTranscription(text)
+    // Process the transcription with enhanced analysis
+    const logs = await processTranscriptionWithAI(text)
 
     return new Response(
       JSON.stringify({ logs }),
@@ -49,6 +48,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
+    console.error('Error processing transcription:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
@@ -59,7 +59,139 @@ serve(async (req) => {
   }
 })
 
-// Simple rule-based processing
+// Process transcription with AI enhancement
+async function processTranscriptionWithAI(text: string): Promise<LogEntry[]> {
+  try {
+    // First use rule-based processing as a fallback approach
+    const ruleBasedLogs = await processTranscription(text)
+    
+    // Try to enhance with Gemini AI if possible
+    try {
+      const enhancedLogs = await enhanceLogsWithGemini(text, ruleBasedLogs)
+      return enhancedLogs
+    } catch (aiError) {
+      console.error('Error enhancing with Gemini, using rule-based logs:', aiError)
+      return ruleBasedLogs
+    }
+  } catch (error) {
+    console.error('Fallback to simple processing due to error:', error)
+    return processTranscription(text)
+  }
+}
+
+// Enhance logs using Gemini AI
+async function enhanceLogsWithGemini(text: string, fallbackLogs: LogEntry[]): Promise<LogEntry[]> {
+  const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
+  
+  if (!GEMINI_API_KEY) {
+    console.log('No Gemini API key found, using rule-based processing')
+    return fallbackLogs
+  }
+  
+  try {
+    // Format the prompt for Gemini
+    const prompt = `
+    Analyze this industrial activity transcription and extract structured information:
+    
+    ${text}
+    
+    Extract the following details for each distinct activity mentioned:
+    - Location (where the activity took place)
+    - Activity Category (Installation, Maintenance, Monitoring, Construction, Transportation, Extraction, Processing)
+    - Activity Type (specific activity being performed)
+    - Equipment used
+    - Personnel involved
+    - Materials used
+    - Any measurements mentioned
+    - Current status (completed, in-progress, planned, delayed, cancelled)
+    - Notes (a concise summary of the activity)
+    
+    Format your response as a JSON array with the following structure:
+    [{
+      "location": "string",
+      "activityCategory": "string",
+      "activityType": "string",
+      "equipment": "string",
+      "personnel": "string",
+      "material": "string",
+      "measurement": "string",
+      "status": "completed|in-progress|planned|delayed|cancelled",
+      "notes": "string"
+    }]
+    
+    Make sure to provide realistic, context-appropriate values for all fields. If information is not explicitly stated, make a reasonable inference based on context.
+    `
+    
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 8192,
+        }
+      })
+    })
+    
+    const data = await response.json()
+    console.log('Gemini API response:', JSON.stringify(data, null, 2))
+    
+    // Extract the logs from the response
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      const content = data.candidates[0].content
+      const textParts = content.parts.filter(part => part.text).map(part => part.text)
+      const responseText = textParts.join('')
+      
+      // Find the JSON part in the response
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0]
+        const logsFromAI = JSON.parse(jsonStr)
+        
+        // Process the AI-generated logs
+        const enhancedLogs = logsFromAI.map((logItem, index) => {
+          // Add missing fields or use defaults
+          return {
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            location: logItem.location || 'Unknown Location',
+            activityCategory: logItem.activityCategory || 'Unspecified',
+            activityType: logItem.activityType || `Activity ${index + 1}`,
+            equipment: logItem.equipment || 'Unspecified Equipment',
+            personnel: logItem.personnel || 'Unnamed Personnel',
+            material: logItem.material || 'Unspecified Material',
+            measurement: logItem.measurement || '',
+            status: logItem.status || 'completed',
+            notes: logItem.notes || '',
+            referenceId: `REF-${Date.now().toString().slice(-5)}-${index}`,
+          }
+        })
+        
+        console.log('Enhanced logs with AI:', enhancedLogs)
+        return enhancedLogs
+      }
+    }
+    
+    throw new Error('Could not parse Gemini response')
+  } catch (error) {
+    console.error('Error calling Gemini API:', error)
+    return fallbackLogs
+  }
+}
+
+// Original rule-based processing as fallback
 async function processTranscription(text: string): Promise<LogEntry[]> {
   const logs: LogEntry[] = [];
   
@@ -229,6 +361,7 @@ async function processTranscription(text: string): Promise<LogEntry[]> {
       
       // Generate a log entry
       logs.push({
+        id: crypto.randomUUID(),
         timestamp,
         location,
         activityCategory,

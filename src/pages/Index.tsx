@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockLogData, getStatusCounts, getCategoryCounts } from '@/lib/mockData';
 import { LogEntry } from '@/lib/types';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Clock, MapPin, Tag, Wrench, Users, Package, BarChart as BarChartIcon, Check, Clock2, AlertCircle, X, Clipboard } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 
 import LogHeader from '@/components/LogHeader';
 import LogCard from '@/components/LogCard';
@@ -23,8 +23,9 @@ const Index = () => {
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [logs, setLogs] = useState<LogEntry[]>(mockLogData);
-  const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(mockLogData);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>([]);
+  const { toast } = useToast();
   
   useEffect(() => {
     if (selectedLocation) {
@@ -33,6 +34,40 @@ const Index = () => {
       setFilteredLogs(logs);
     }
   }, [selectedLocation, logs]);
+  
+  // Compute stats from real data
+  const getStatusCounts = () => {
+    const counts: Record<string, number> = {
+      completed: 0,
+      'in-progress': 0,
+      planned: 0,
+      delayed: 0,
+      cancelled: 0
+    };
+
+    logs.forEach(log => {
+      if (log.status && counts[log.status] !== undefined) {
+        counts[log.status]++;
+      }
+    });
+
+    return counts;
+  };
+
+  const getCategoryCounts = () => {
+    const counts: Record<string, number> = {};
+
+    logs.forEach(log => {
+      if (log.activityCategory) {
+        if (!counts[log.activityCategory]) {
+          counts[log.activityCategory] = 0;
+        }
+        counts[log.activityCategory]++;
+      }
+    });
+
+    return counts;
+  };
   
   const statusCounts = getStatusCounts();
   const categoryCounts = getCategoryCounts();
@@ -68,11 +103,25 @@ const Index = () => {
   };
   
   const handleLogsGenerated = (newLogs: LogEntry[]) => {
+    if (!newLogs || newLogs.length === 0) {
+      toast({
+        title: "No logs generated",
+        description: "No valid log entries could be extracted from the transcription.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLogs(prevLogs => {
       // Merge new logs with existing logs, avoiding duplicates by ID
       const existingIds = new Set(prevLogs.map(log => log.id));
       const uniqueNewLogs = newLogs.filter(log => !existingIds.has(log.id));
       return [...prevLogs, ...uniqueNewLogs];
+    });
+
+    toast({
+      title: "Success",
+      description: `Generated ${newLogs.length} log entries`,
     });
   };
   
@@ -121,71 +170,82 @@ const Index = () => {
                 ))}
               </TransitionLayout>
               
-              <TransitionLayout animation="slide-up" delay={100} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glass rounded-xl p-6">
-                  <h2 className="text-lg font-medium mb-4">Status Distribution</h2>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={statusData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {statusData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                
-                <div className="glass rounded-xl p-6">
-                  <h2 className="text-lg font-medium mb-4">Activity Categories</h2>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={categoryData}
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
+              {logs.length > 0 ? (
+                <>
+                  <TransitionLayout animation="slide-up" delay={100} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="glass rounded-xl p-6">
+                      <h2 className="text-lg font-medium mb-4">Status Distribution</h2>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={statusData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {statusData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    <div className="glass rounded-xl p-6">
+                      <h2 className="text-lg font-medium mb-4">Activity Categories</h2>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={categoryData}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 5,
+                            }}
+                          >
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </TransitionLayout>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-lg font-medium">Recent Activity Logs</h2>
+                      <button 
+                        onClick={() => setActiveView('list')}
+                        className="text-sm text-primary hover:underline"
                       >
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="value" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                        View all
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredLogs.slice(0, 6).map((log, index) => (
+                        <LogCard key={log.id} log={log} index={index} />
+                      ))}
+                    </div>
                   </div>
+                </>
+              ) : (
+                <div className="glass rounded-xl p-8 text-center">
+                  <h2 className="text-xl font-medium mb-4">No Log Data Available</h2>
+                  <p className="text-muted-foreground mb-4">
+                    Enter a transcription above to generate activity logs and visualize them.
+                  </p>
                 </div>
-              </TransitionLayout>
-              
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-lg font-medium">Recent Activity Logs</h2>
-                  <button 
-                    onClick={() => setActiveView('list')}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    View all
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredLogs.slice(0, 6).map((log, index) => (
-                    <LogCard key={log.id} log={log} index={index} />
-                  ))}
-                </div>
-              </div>
+              )}
             </motion.div>
           )}
           
@@ -200,9 +260,10 @@ const Index = () => {
               <LogMap 
                 selectedLocation={selectedLocation} 
                 setSelectedLocation={setSelectedLocation} 
+                logs={logs}
               />
               
-              {selectedLocation && (
+              {selectedLocation && filteredLogs.length > 0 && (
                 <TransitionLayout animation="slide-up" className="mt-8">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-medium flex items-center">
@@ -255,7 +316,16 @@ const Index = () => {
                 )}
               </div>
               
-              <LogTable logs={filteredLogs} onSelectLog={setSelectedLog} />
+              {logs.length > 0 ? (
+                <LogTable logs={filteredLogs} onSelectLog={setSelectedLog} />
+              ) : (
+                <div className="glass rounded-xl p-8 text-center">
+                  <h2 className="text-xl font-medium mb-4">No Log Data Available</h2>
+                  <p className="text-muted-foreground">
+                    Enter a transcription above to generate activity logs.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
           
@@ -288,7 +358,16 @@ const Index = () => {
                 )}
               </div>
               
-              <LogTimeline logs={filteredLogs} onSelectLog={setSelectedLog} />
+              {logs.length > 0 ? (
+                <LogTimeline logs={filteredLogs} onSelectLog={setSelectedLog} />
+              ) : (
+                <div className="glass rounded-xl p-8 text-center">
+                  <h2 className="text-xl font-medium mb-4">No Timeline Data Available</h2>
+                  <p className="text-muted-foreground">
+                    Enter a transcription above to generate activity logs for the timeline.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
           
@@ -327,7 +406,16 @@ const Index = () => {
                 )}
               </div>
               
-              <NetworkVisualization logs={filteredLogs} />
+              {logs.length > 0 ? (
+                <NetworkVisualization logs={filteredLogs} />
+              ) : (
+                <div className="glass rounded-xl p-8 text-center">
+                  <h2 className="text-xl font-medium mb-4">No Network Data Available</h2>
+                  <p className="text-muted-foreground">
+                    Enter a transcription above to generate activity logs for network visualization.
+                  </p>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
