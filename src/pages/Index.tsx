@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockLogData, getStatusCounts, getCategoryCounts } from '@/lib/mockData';
 import { LogEntry } from '@/lib/types';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Clock, MapPin, Tag, Tool, Users, Package, BarChart as BarChartIcon, Check, Clock2, AlertCircle, X, Clipboard } from 'lucide-react';
+import { Calendar, Clock, MapPin, Tag, Wrench, Users, Package, BarChart as BarChartIcon, Check, Clock2, AlertCircle, X, Clipboard } from 'lucide-react';
 
 import LogHeader from '@/components/LogHeader';
 import LogCard from '@/components/LogCard';
@@ -23,7 +22,6 @@ const Index = () => {
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [filteredLogs, setFilteredLogs] = useState<LogEntry[]>(mockLogData);
   
-  // Filter logs when location changes
   useEffect(() => {
     if (selectedLocation) {
       setFilteredLogs(mockLogData.filter(log => log.location === selectedLocation));
@@ -32,7 +30,6 @@ const Index = () => {
     }
   }, [selectedLocation]);
   
-  // Prepare data for charts
   const statusCounts = getStatusCounts();
   const categoryCounts = getCategoryCounts();
   
@@ -85,7 +82,6 @@ const Index = () => {
               transition={{ duration: 0.3 }}
               className="space-y-8"
             >
-              {/* Stats row */}
               <TransitionLayout animation="slide-up" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Object.entries(statusCounts).map(([status, count], index) => (
                   <div 
@@ -110,7 +106,6 @@ const Index = () => {
                 ))}
               </TransitionLayout>
               
-              {/* Charts section */}
               <TransitionLayout animation="slide-up" delay={100} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="glass rounded-xl p-6">
                   <h2 className="text-lg font-medium mb-4">Status Distribution</h2>
@@ -160,7 +155,6 @@ const Index = () => {
                 </div>
               </TransitionLayout>
               
-              {/* Recent Logs Grid */}
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-lg font-medium">Recent Activity Logs</h2>
@@ -285,7 +279,6 @@ const Index = () => {
         </AnimatePresence>
       </main>
       
-      {/* Log detail dialog */}
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           {selectedLog && (
@@ -336,7 +329,7 @@ const Index = () => {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-1">Equipment</h4>
                       <div className="flex items-center">
-                        <Tool className="w-5 h-5 mr-2 text-primary/70" />
+                        <Wrench className="w-5 h-5 mr-2 text-primary/70" />
                         <span>{selectedLog.equipment}</span>
                       </div>
                     </div>
@@ -415,7 +408,6 @@ const Index = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Search overlay */}
       <LogSearch 
         isOpen={searchOpen} 
         onClose={() => setSearchOpen(false)} 

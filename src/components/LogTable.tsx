@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LogEntry } from '@/lib/types';
 import TransitionLayout from './TransitionLayout';
-import { Calendar, MapPin, Tag, Tool, Clock, Check, AlertCircle, Clock2, X } from 'lucide-react';
+import { Calendar, MapPin, Tag, Wrench, Clock, Check, AlertCircle, Clock2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LogTableProps {
@@ -136,7 +135,7 @@ const LogTable: React.FC<LogTableProps> = ({ logs, onSelectLog }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <div className="flex items-center">
-                    <Tool className="w-4 h-4 mr-2 text-primary/70" />
+                    <Wrench className="w-4 h-4 mr-2 text-primary/70" />
                     <span>{log.equipment}</span>
                   </div>
                 </td>

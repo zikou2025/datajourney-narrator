@@ -1,9 +1,10 @@
-
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { getLocationGroups } from '@/lib/mockData';
 import { Maximize, Minimize, MapPin } from 'lucide-react';
 import TransitionLayout from './TransitionLayout';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface LogMapProps {
   selectedLocation: string | null;
@@ -27,7 +28,6 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
       
       // Replace with your Mapbox token - for demo purposes only
       // In production, use env variables or backend authentication
-      const mapboxgl = window.mapboxgl;
       mapboxgl.accessToken = 'pk.eyJ1IjoiZXhhbXBsZXVzZXIiLCJhIjoiY2xhYmZlcjc5MDduNTN3bXZ1cjlscmdjcyJ9.3J4I-XMofGTNJ-5uZvLRaQ';
       
       mapRef.current = new mapboxgl.Map({
@@ -197,12 +197,5 @@ const LogMap: React.FC<LogMapProps> = ({ selectedLocation, setSelectedLocation }
     </TransitionLayout>
   );
 };
-
-// Extend the Window interface
-declare global {
-  interface Window {
-    mapboxgl: any;
-  }
-}
 
 export default LogMap;

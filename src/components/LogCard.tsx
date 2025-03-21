@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LogEntry } from '@/lib/types';
@@ -7,7 +6,7 @@ import {
   Calendar,
   MapPin,
   Tag,
-  Tool,
+  Wrench,
   Users,
   Package,
   BarChart,
@@ -66,7 +65,7 @@ const LogCard: React.FC<LogCardProps> = ({ log, index }) => {
         {/* Details grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <DetailItem icon={<Tag className="w-4 h-4 text-primary/70" />} label="Category" value={log.activityCategory} />
-          <DetailItem icon={<Tool className="w-4 h-4 text-primary/70" />} label="Equipment" value={log.equipment} />
+          <DetailItem icon={<Wrench className="w-4 h-4 text-primary/70" />} label="Equipment" value={log.equipment} />
           <DetailItem icon={<Users className="w-4 h-4 text-primary/70" />} label="Personnel" value={log.personnel} />
           <DetailItem icon={<Package className="w-4 h-4 text-primary/70" />} label="Material" value={log.material} />
           {log.measurement && (
