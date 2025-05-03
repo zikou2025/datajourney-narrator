@@ -44,3 +44,20 @@ export type TimeSeriesData = {
   status?: string;
 }
 
+export interface StorySegment {
+  title: string;
+  location: string;
+  start: string;
+  end: string;
+  timeSpan: string;
+  logs: LogEntry[];
+  coordinates?: [number, number];
+  summary: string;
+}
+
+export interface StoryChapter {
+  title: string;
+  timestamp: string;
+  status: string;
+  notes: string;
+}

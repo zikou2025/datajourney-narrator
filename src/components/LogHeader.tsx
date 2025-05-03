@@ -1,12 +1,13 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PieChart, BarChart3, Map, List, Calendar, Search, Menu } from "lucide-react";
+import { PieChart, BarChart3, Map, List, Calendar, Search, Menu, BookOpen } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
 
-type ActiveView = 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries';
+type ActiveView = 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story';
 
 interface LogHeaderProps {
   activeView: ActiveView;
@@ -23,6 +24,7 @@ const LogHeader: React.FC<LogHeaderProps> = ({ activeView, setActiveView, setSea
     { id: 'list', label: 'List View', icon: List },
     { id: 'timeline', label: 'Timeline', icon: Calendar },
     { id: 'timeseries', label: 'Time Series', icon: BarChart3 },
+    { id: 'story', label: 'Story View', icon: BookOpen },
   ];
   
   const DesktopNav = () => (
