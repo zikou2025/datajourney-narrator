@@ -242,6 +242,9 @@ export const mockLogData: LogEntry[] = [
   }
 ];
 
+// Export mockLogData as mockLogs to match the import in Index.tsx
+export const mockLogs = mockLogData;
+
 // Helper functions to process data
 export const getLocationGroups = (): { location: string; coordinates: [number, number]; count: number }[] => {
   const locations = mockLogData.reduce((acc, log) => {

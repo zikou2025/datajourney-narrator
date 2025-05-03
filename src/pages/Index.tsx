@@ -11,6 +11,7 @@ import LogTimeline from "@/components/LogTimeline";
 import TimeSeriesView from "@/components/TimeSeriesView";
 import StorytellingView from "@/components/StorytellingView";
 import { mockLogs } from "@/lib/mockData";
+import { toast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -19,6 +20,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
   // Load mock data on initial render
   useEffect(() => {
@@ -55,16 +57,24 @@ const Index = () => {
     });
   };
 
+  // Handle selecting a log
+  const handleSelectLog = (log: LogEntry) => {
+    toast({
+      title: `Log ${log.id}`,
+      description: `${log.activityType} at ${log.location}`,
+    });
+  };
+
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
         return <LogDashboard logs={logs} />;
       case 'map':
-        return <LogMap logs={logs} />;
+        return <LogMap logs={logs} selectedLocation={selectedLocation} setSelectedLocation={setSelectedLocation} />;
       case 'list':
-        return <LogTable logs={logs} />;
+        return <LogTable logs={logs} onSelectLog={handleSelectLog} />;
       case 'timeline':
-        return <LogTimeline logs={logs} />;
+        return <LogTimeline logs={logs} onSelectLog={handleSelectLog} />;
       case 'timeseries':
         return <TimeSeriesView logs={logs} />;
       case 'story':
@@ -85,10 +95,9 @@ const Index = () => {
       {searchOpen && (
         <LogSearch
           isOpen={searchOpen}
-          setIsOpen={setSearchOpen}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          searchResults={searchResults}
+          onClose={() => setSearchOpen(false)}
+          logs={logs}
+          onSelectLog={handleSelectLog}
         />
       )}
       
