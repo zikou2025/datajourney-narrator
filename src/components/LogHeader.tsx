@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { PieChart, BarChart3, Map, List, Calendar, Search, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
 
@@ -16,7 +15,7 @@ interface LogHeaderProps {
 }
 
 const LogHeader: React.FC<LogHeaderProps> = ({ activeView, setActiveView, setSearchOpen }) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: PieChart },
