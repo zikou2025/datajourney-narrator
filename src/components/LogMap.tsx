@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogEntry } from '@/lib/types';
@@ -8,8 +7,13 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from 'next-themes';
 import { Button } from './ui/button';
-import { Tooltip } from './ui/tooltip';
-import { Dropdown, DropdownMenu, DropdownItem } from './ui/dropdown';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 interface LogMapProps {
   selectedLocation: string | null;
@@ -334,12 +338,12 @@ const LogMap: React.FC<LogMapProps> = ({
       
       // Create multiple points based on log count for better heatmap visualization
       return Array(Math.min(location.count, 20)).fill(0).map(() => ({
-        type: 'Feature',
+        type: 'Feature' as const,
         properties: {
           count: location.count
         },
         geometry: {
-          type: 'Point',
+          type: 'Point' as const,
           coordinates: location.coordinates
         }
       }));
@@ -528,27 +532,42 @@ const LogMap: React.FC<LogMapProps> = ({
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-medium">Locations</h3>
                     <div className="flex space-x-1">
-                      <Tooltip content={`${activeFilter === 'all' ? 'Filtered' : 'All'} Locations`}>
-                        <Button 
-                          size="xs" 
-                          variant="ghost" 
-                          onClick={() => setActiveFilter(activeFilter === 'all' ? 'all' : 'all')}
-                          className="h-6 w-6 p-1"
-                        >
-                          <Filter className="w-3.5 h-3.5" />
-                        </Button>
-                      </Tooltip>
-                      {!isFullscreen && (
-                        <Tooltip content="Hide Sidebar">
-                          <Button 
-                            size="xs" 
-                            variant="ghost" 
-                            onClick={() => setShowSidebar(false)}
-                            className="h-6 w-6 p-1"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => setActiveFilter(activeFilter === 'all' ? 'all' : 'all')}
+                              className="h-6 w-6 p-1"
+                            >
+                              <Filter className="w-3.5 h-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{`${activeFilter === 'all' ? 'Filtered' : 'All'} Locations`}</p>
+                          </TooltipContent>
                         </Tooltip>
+                      </TooltipProvider>
+
+                      {!isFullscreen && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => setShowSidebar(false)}
+                                className="h-6 w-6 p-1"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Hide Sidebar</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>
@@ -573,7 +592,7 @@ const LogMap: React.FC<LogMapProps> = ({
                   
                   <div className="flex items-center mt-3 space-x-1">
                     <Button
-                      size="xs"
+                      size="sm"
                       variant={activeFilter === 'all' ? 'default' : 'outline'}
                       onClick={() => setActiveFilter('all')}
                       className="text-xs flex-1 h-7"
@@ -581,7 +600,7 @@ const LogMap: React.FC<LogMapProps> = ({
                       All
                     </Button>
                     <Button
-                      size="xs"
+                      size="sm"
                       variant={activeFilter === 'recent' ? 'default' : 'outline'}
                       onClick={() => setActiveFilter('recent')}
                       className="text-xs flex-1 h-7"
@@ -589,7 +608,7 @@ const LogMap: React.FC<LogMapProps> = ({
                       Recent
                     </Button>
                     <Button
-                      size="xs"
+                      size="sm"
                       variant={activeFilter === 'highActivity' ? 'default' : 'outline'}
                       onClick={() => setActiveFilter('highActivity')}
                       className="text-xs flex-1 h-7"
@@ -662,72 +681,95 @@ const LogMap: React.FC<LogMapProps> = ({
           
           {/* Map controls */}
           <div className="absolute top-4 right-4 flex flex-col space-y-2">
-            <Tooltip content={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
-              <button
-                onClick={toggleFullscreen}
-                className="glass-darker p-2 rounded-full shadow-sm hover:bg-black/10 transition-colors"
-              >
-                {isFullscreen ? (
-                  <Minimize className="w-4 h-4" />
-                ) : (
-                  <Maximize className="w-4 h-4" />
-                )}
-              </button>
-            </Tooltip>
-            
-            <Dropdown>
-              <Tooltip content="Change Map Style">
-                <button className="glass-darker p-2 rounded-full shadow-sm hover:bg-black/10 transition-colors">
-                  <Layers className="w-4 h-4" />
-                </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleFullscreen}
+                    className="glass-darker p-2 rounded-full shadow-sm hover:bg-black/10 transition-colors"
+                  >
+                    {isFullscreen ? (
+                      <Minimize className="w-4 h-4" />
+                    ) : (
+                      <Maximize className="w-4 h-4" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</p>
+                </TooltipContent>
               </Tooltip>
+            </TooltipProvider>
+            
+            <DropdownMenu>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button className="glass-darker p-2 rounded-full shadow-sm hover:bg-black/10 transition-colors">
+                        <Layers className="w-4 h-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Change Map Style</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
-              <DropdownMenu className="w-40">
-                <DropdownItem 
+              <DropdownMenuContent className="w-40">
+                <DropdownMenuItem 
                   onClick={() => updateMapStyle('light')}
-                  active={mapStyle === 'light'}
+                  className={mapStyle === 'light' ? 'bg-secondary' : ''}
                 >
                   Light
-                </DropdownItem>
-                <DropdownItem 
+                </DropdownMenuItem>
+                <DropdownMenuItem 
                   onClick={() => updateMapStyle('dark')}
-                  active={mapStyle === 'dark'}
+                  className={mapStyle === 'dark' ? 'bg-secondary' : ''}
                 >
                   Dark
-                </DropdownItem>
-                <DropdownItem 
+                </DropdownMenuItem>
+                <DropdownMenuItem 
                   onClick={() => updateMapStyle('satellite')}
-                  active={mapStyle === 'satellite'}
+                  className={mapStyle === 'satellite' ? 'bg-secondary' : ''}
                 >
                   Satellite
-                </DropdownItem>
-                <DropdownItem 
+                </DropdownMenuItem>
+                <DropdownMenuItem 
                   onClick={() => updateMapStyle('streets')}
-                  active={mapStyle === 'streets'}
+                  className={mapStyle === 'streets' ? 'bg-secondary' : ''}
                 >
                   Streets
-                </DropdownItem>
-                <DropdownItem 
+                </DropdownMenuItem>
+                <DropdownMenuItem 
                   onClick={() => updateMapStyle('outdoors')}
-                  active={mapStyle === 'outdoors'}
+                  className={mapStyle === 'outdoors' ? 'bg-secondary' : ''}
                 >
                   Outdoors
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
-            <Tooltip content={heatmapEnabled ? "Disable Heatmap" : "Enable Heatmap"}>
-              <button 
-                onClick={toggleHeatmap}
-                className={`p-2 rounded-full shadow-sm transition-colors ${
-                  heatmapEnabled 
-                    ? 'bg-primary text-white' 
-                    : 'glass-darker hover:bg-black/10'
-                }`}
-              >
-                <Compass className="w-4 h-4" />
-              </button>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={toggleHeatmap}
+                    className={`p-2 rounded-full shadow-sm transition-colors ${
+                      heatmapEnabled 
+                        ? 'bg-primary text-white' 
+                        : 'glass-darker hover:bg-black/10'
+                    }`}
+                  >
+                    <Compass className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{heatmapEnabled ? "Disable Heatmap" : "Enable Heatmap"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           {/* Selected location info panel */}
@@ -802,154 +844,44 @@ const LogMap: React.FC<LogMapProps> = ({
                       onClick={() => setShowLocationDetails(false)} 
                       className="text-muted-foreground hover:text-foreground"
                     >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="glass p-3 rounded-lg">
+                        <div className="text-sm text-muted-foreground">Total Logs</div>
+                        <div className="text-2xl font-bold">{selectedLocationDetails.count}</div>
+                      </div>
                       
-<X className="w-5 h-5" />
-                   </button>
-                 </div>
-                 
-                 <div className="p-5">
-                   <div className="grid grid-cols-2 gap-4 mb-4">
-                     <div className="glass p-3 rounded-lg">
-                       <div className="text-sm text-muted-foreground">Total Logs</div>
-                       <div className="text-2xl font-bold">{selectedLocationDetails.count}</div>
-                     </div>
-                     
-                     <div className="glass p-3 rounded-lg">
-                       <div className="text-sm text-muted-foreground">Last Activity</div>
-                       <div className="text-xl font-medium">
-                         {selectedLocationDetails.lastActivity ? 
-                           selectedLocationDetails.lastActivity.toLocaleDateString() : 
-                           'Unknown'}
-                       </div>
-                     </div>
-                   </div>
-                   
-                   <div className="mb-4">
-                     <h4 className="text-sm font-medium mb-2">Activity Timeline</h4>
-                     {selectedLocationDetails.firstActivity && selectedLocationDetails.lastActivity ? (
-                       <div className="relative h-4 bg-secondary rounded-full overflow-hidden">
-                         <div 
-                           className="absolute left-0 top-0 h-full bg-primary rounded-full"
-                           style={{ 
-                             width: `${Math.min(100, selectedLocationDetails.count * 5)}%` 
-                           }}
-                         ></div>
-                         <div className="absolute -top-6 left-0 text-xs">
-                           {selectedLocationDetails.firstActivity.toLocaleDateString()}
-                         </div>
-                         <div className="absolute -top-6 right-0 text-xs">
-                           {selectedLocationDetails.lastActivity.toLocaleDateString()}
-                         </div>
-                       </div>
-                     ) : (
-                       <div className="text-sm text-muted-foreground">
-                         Timeline data not available
-                       </div>
-                     )}
-                   </div>
-                   
-                   <div className="mb-4">
-                     <h4 className="text-sm font-medium mb-2">Coordinates</h4>
-                     {selectedLocationDetails.coordinates ? (
-                       <div className="flex items-center space-x-2">
-                         <div className="glass px-2 py-1 rounded text-xs">
-                           Lat: {selectedLocationDetails.coordinates[1].toFixed(4)}
-                         </div>
-                         <div className="glass px-2 py-1 rounded text-xs">
-                           Lng: {selectedLocationDetails.coordinates[0].toFixed(4)}
-                         </div>
-                         <button 
-                           className="text-xs text-primary hover:underline ml-auto"
-                           onClick={() => {
-                             // Copy coordinates to clipboard
-                             navigator.clipboard.writeText(
-                               `${selectedLocationDetails.coordinates[1]}, ${selectedLocationDetails.coordinates[0]}`
-                             );
-                             // You'd add a toast notification here
-                           }}
-                         >
-                           Copy
-                         </button>
-                       </div>
-                     ) : (
-                       <div className="text-sm text-muted-foreground">
-                         Coordinates not available
-                       </div>
-                     )}
-                   </div>
-                   
-                   {selectedLocationDetails.logIds && selectedLocationDetails.logIds.length > 0 && (
-                     <div>
-                       <h4 className="text-sm font-medium mb-2">Recent Logs</h4>
-                       <div className="max-h-40 overflow-y-auto border border-border rounded-lg divide-y divide-border">
-                         {selectedLocationDetails.logIds.slice(0, 5).map((logId, idx) => (
-                           <button
-                             key={idx}
-                             onClick={() => onLogSelect && onLogSelect(logId)}
-                             className="w-full text-left p-2 hover:bg-secondary/50 transition-colors text-sm flex items-center justify-between"
-                           >
-                             <span className="truncate">Log #{idx + 1}</span>
-                             <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                           </button>
-                         ))}
-                       </div>
-                       
-                       {selectedLocationDetails.logIds.length > 5 && (
-                         <div className="mt-2 text-center">
-                           <button 
-                             className="text-xs text-primary hover:underline"
-                             onClick={() => {
-                               // Show all logs for this location
-                               // Implementation would depend on your UI
-                             }}
-                           >
-                             Show all {selectedLocationDetails.logIds.length} logs
-                           </button>
-                         </div>
-                       )}
-                     </div>
-                   )}
-                 </div>
-                 
-                 <div className="p-4 border-t border-border flex justify-end">
-                   <Button 
-                     variant="outline" 
-                     size="sm"
-                     onClick={() => setShowLocationDetails(false)}
-                     className="mr-2"
-                   >
-                     Close
-                   </Button>
-                   <Button 
-                     size="sm"
-                     onClick={() => {
-                       setShowLocationDetails(false);
-                       // Center map on this location
-                       if (selectedLocationDetails.coordinates && mapRef.current) {
-                         mapRef.current.flyTo({
-                           center: selectedLocationDetails.coordinates,
-                           zoom: 15,
-                           duration: 1000
-                         });
-                       }
-                     }}
-                   >
-                     Center on Map
-                   </Button>
-                 </div>
-               </motion.div>
-             </motion.div>
-           )}
-         </AnimatePresence>
-         
-         {/* Map attribution footer */}
-         <div className="absolute bottom-2 right-2 text-xs text-muted-foreground glass-darker px-2 py-1 rounded">
-           © Mapbox © OpenStreetMap
-         </div>
-       </motion.div>
-     </div>
-   </TransitionLayout>
- );
-};
-
-export default LogMap;
+                      <div className="glass p-3 rounded-lg">
+                        <div className="text-sm text-muted-foreground">Last Activity</div>
+                        <div className="text-xl font-medium">
+                          {selectedLocationDetails.lastActivity ? 
+                            selectedLocationDetails.lastActivity.toLocaleDateString() : 
+                            'Unknown'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2">Activity Timeline</h4>
+                      {selectedLocationDetails.firstActivity && selectedLocationDetails.lastActivity ? (
+                        <div className="relative h-4 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="absolute left-0 top-0 h-full bg-primary rounded-full"
+                            style={{ 
+                              width: `${Math.min(100, selectedLocationDetails.count * 5)}%` 
+                            }}
+                          ></div>
+                          <div className="absolute -top-6 left-0 text-xs">
+                            {selectedLocationDetails.firstActivity.toLocaleDateString()}
+                          </div>
+                          <div className="absolute -top-6 right-0 text-xs">
+                            {selectedLocationDetails.lastActivity.toLocaleDateString()}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          Timeline data not available

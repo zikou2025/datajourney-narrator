@@ -14,6 +14,7 @@ export interface LogEntry {
   media?: string;
   referenceId: string;
   coordinates?: [number, number]; // [longitude, latitude]
+  episodeId?: string; // Added episodeId field for episode connections
 }
 
 export type LocationGroup = {
