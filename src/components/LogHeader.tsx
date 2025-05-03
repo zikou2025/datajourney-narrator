@@ -1,134 +1,115 @@
+
 import React from 'react';
-import { Calendar, MapPin, Clipboard, BarChart, Search, X, Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from "@/components/ui/button";
+import { PieChart, BarChart3, Map, List, Calendar, Search, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useMobile } from "@/hooks/use-mobile";
+import { motion } from 'framer-motion';
+import { cn } from "@/lib/utils";
+
+type ActiveView = 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries';
 
 interface LogHeaderProps {
-  activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'network';
-  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline' | 'network') => void;
-  setSearchOpen: (open: boolean) => void;
+  activeView: ActiveView;
+  setActiveView: (view: ActiveView) => void;
+  setSearchOpen: (isOpen: boolean) => void;
 }
 
 const LogHeader: React.FC<LogHeaderProps> = ({ activeView, setActiveView, setSearchOpen }) => {
-  const isMobile = useIsMobile();
+  const isMobile = useMobile();
   
-  const navigationItems = [
-    { view: 'dashboard', label: 'Dashboard', icon: <BarChart className="w-5 h-5" /> },
-    { view: 'map', label: 'Map View', icon: <MapPin className="w-5 h-5" /> },
-    { view: 'list', label: 'List View', icon: <Clipboard className="w-5 h-5" /> },
-    { view: 'timeline', label: 'Timeline', icon: <Calendar className="w-5 h-5" /> },
-    { view: 'network', label: 'Network', icon: (
-      <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="18" cy="5" r="3" />
-        <circle cx="6" cy="12" r="3" />
-        <circle cx="18" cy="19" r="3" />
-        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-      </svg>
-    ) },
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: PieChart },
+    { id: 'map', label: 'Map View', icon: Map },
+    { id: 'list', label: 'List View', icon: List },
+    { id: 'timeline', label: 'Timeline', icon: Calendar },
+    { id: 'timeseries', label: 'Time Series', icon: BarChart3 },
   ];
   
-  const renderNavigation = () => (
+  const DesktopNav = () => (
     <nav className="flex items-center space-x-1">
-      {navigationItems.map((item) => (
-        <button
-          key={item.view}
-          onClick={() => setActiveView(item.view as any)}
-          className={`flex items-center p-2 rounded-md transition-colors ${
-            activeView === item.view
-              ? 'text-primary bg-primary/10'
-              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-          }`}
+      {navItems.map((item) => (
+        <Button
+          key={item.id}
+          variant={activeView === item.id ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveView(item.id as ActiveView)}
+          className={cn(
+            "flex items-center px-3 gap-1.5",
+            activeView === item.id ? "bg-primary text-primary-foreground" : ""
+          )}
         >
-          {item.icon}
-          <span className="ml-2 hidden md:inline">{item.label}</span>
-        </button>
+          <item.icon className="w-4 h-4" />
+          {item.label}
+          {activeView === item.id && (
+            <motion.div
+              layoutId="active-nav"
+              className="absolute inset-0 rounded-md bg-primary z-[-1]"
+              transition={{ type: "spring", duration: 0.6 }}
+            />
+          )}
+        </Button>
       ))}
     </nav>
   );
   
-  return (
-    <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center">
-          <h1 className="text-xl font-medium flex items-center mr-8">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-6 h-6 mr-2 text-primary"
+  const MobileNav = () => (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9">
+          <Menu className="h-4 w-4" />
+          <span className="sr-only">Toggle navigation</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left">
+        <div className="flex flex-col space-y-2 pt-4">
+          {navItems.map((item) => (
+            <Button
+              key={item.id}
+              variant={activeView === item.id ? "default" : "ghost"}
+              onClick={() => setActiveView(item.id as ActiveView)}
+              className="justify-start"
             >
-              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-              <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
-              <path d="M12 17v-6" />
-              <path d="M9 14l3 3 3-3" />
-            </svg>
-            Activity Logger
-          </h1>
+              <item.icon className="mr-2 h-5 w-5" />
+              {item.label}
+            </Button>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+  
+  return (
+    <header className="border-b backdrop-blur-md bg-background/70 sticky top-0 z-40">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-bold mr-3">
+              LA
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold">Log Analyzer</h1>
+              <p className="text-xs text-muted-foreground">
+                Analyze activity logs with AI
+              </p>
+            </div>
+          </div>
+
+          {!isMobile && <div className="h-8 border-l mx-4" />}
           
-          {!isMobile && renderNavigation()}
+          {isMobile ? <MobileNav /> : <DesktopNav />}
         </div>
         
-        <div className="flex items-center">
-          <button
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
             onClick={() => setSearchOpen(true)}
-            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="h-9 w-9"
           >
-            <Search className="w-5 h-5" />
-          </button>
-          
-          {isMobile && (
-            <Sheet>
-              <SheetTrigger asChild>
-                <button className="ml-2 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-                  <Menu className="w-5 h-5" />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-                <div className="py-4">
-                  <div className="flex items-center mb-6">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-6 h-6 mr-2 text-primary"
-                    >
-                      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                      <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
-                      <path d="M12 17v-6" />
-                      <path d="M9 14l3 3 3-3" />
-                    </svg>
-                    <h2 className="text-xl font-medium">Activity Logger</h2>
-                  </div>
-                  
-                  <nav className="flex flex-col space-y-1">
-                    {navigationItems.map((item) => (
-                      <button
-                        key={item.view}
-                        onClick={() => setActiveView(item.view as any)}
-                        className={`flex items-center p-3 rounded-md transition-colors ${
-                          activeView === item.view
-                            ? 'text-primary bg-primary/10'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                        }`}
-                      >
-                        {item.icon}
-                        <span className="ml-2">{item.label}</span>
-                      </button>
-                    ))}
-                  </nav>
-                </div>
-              </SheetContent>
-            </Sheet>
-          )}
+            <Search className="h-4 w-4" />
+            <span className="sr-only">Search logs</span>
+          </Button>
         </div>
       </div>
     </header>

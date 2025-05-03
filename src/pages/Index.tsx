@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -18,8 +17,10 @@ import TransitionLayout from '@/components/TransitionLayout';
 import TranscriptionInput from '@/components/TranscriptionInput';
 import TimeSeriesView from '@/components/TimeSeriesView';
 
+type ActiveView = 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries';
+
 const Index = () => {
-  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries'>('dashboard');
+  const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -127,7 +128,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <LogHeader 
         activeView={activeView} 
-        setActiveView={setActiveView}
+        setActiveView={setActiveView as any}
         setSearchOpen={setSearchOpen}
       />
       

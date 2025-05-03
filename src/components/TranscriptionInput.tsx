@@ -142,7 +142,7 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <Calendar className="mr-2 h-4 w-4" />
                   {videoDate ? format(videoDate, 'PPP') : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
