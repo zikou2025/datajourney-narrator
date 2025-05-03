@@ -885,3 +885,18 @@ const LogMap: React.FC<LogMapProps> = ({
                       ) : (
                         <div className="text-sm text-muted-foreground">
                           Timeline data not available
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    </TransitionLayout>
+  );
+};
+
+export default LogMap;
