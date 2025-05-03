@@ -15,6 +15,7 @@ export interface LogEntry {
   referenceId: string;
   coordinates?: [number, number]; // [longitude, latitude]
   episodeId?: string; // Added episodeId field for episode connections
+  timeElapsed?: number; // Time elapsed in minutes since the first log
 }
 
 export type LocationGroup = {
@@ -34,3 +35,12 @@ export type StatusCounts = {
 export type CategoryCounts = {
   [key: string]: number;
 };
+
+export type TimeSeriesData = {
+  timestamp: Date;
+  count: number;
+  category?: string;
+  location?: string;
+  status?: string;
+}
+

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogEntry } from '@/lib/types';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Clock, MapPin, Tag, Wrench, Users, Package, BarChart as BarChartIcon, Check, Clock2, AlertCircle, X, Clipboard } from 'lucide-react';
+import { Calendar, Clock, MapPin, Tag, Wrench, Users, Package, BarChart as BarChartIcon, Check, Clock2, AlertCircle, X, Clipboard, BarChart3 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
 import LogHeader from '@/components/LogHeader';
@@ -15,10 +16,10 @@ import LogTimeline from '@/components/LogTimeline';
 import LogSearch from '@/components/LogSearch';
 import TransitionLayout from '@/components/TransitionLayout';
 import TranscriptionInput from '@/components/TranscriptionInput';
-import NetworkVisualization from '@/components/NetworkVisualization';
+import TimeSeriesView from '@/components/TimeSeriesView';
 
 const Index = () => {
-  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'network'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries'>('dashboard');
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -368,9 +369,9 @@ const Index = () => {
             </motion.div>
           )}
           
-          {activeView === 'network' && (
+          {activeView === 'timeseries' && (
             <motion.div
-              key="network"
+              key="timeseries"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -379,14 +380,8 @@ const Index = () => {
             >
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                  </svg>
-                  Network Analysis
+                  <BarChart3 className="w-5 h-5 mr-2 text-primary" />
+                  Time Series Analysis
                   {selectedLocation && (
                     <span className="ml-2 text-sm text-muted-foreground">
                       Filtered by: {selectedLocation}
@@ -403,16 +398,7 @@ const Index = () => {
                 )}
               </div>
               
-              {logs.length > 0 ? (
-                <NetworkVisualization logs={filteredLogs} />
-              ) : (
-                <div className="glass rounded-xl p-8 text-center">
-                  <h2 className="text-xl font-medium mb-4">No Network Data Available</h2>
-                  <p className="text-muted-foreground">
-                    Enter a transcription above to generate activity logs for network visualization.
-                  </p>
-                </div>
-              )}
+              <TimeSeriesView logs={filteredLogs} />
             </motion.div>
           )}
         </AnimatePresence>
