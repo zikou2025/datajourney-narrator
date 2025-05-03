@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { LogEntry } from '@/lib/types';
@@ -26,6 +25,23 @@ const STATUS_COLORS = {
   planned: '#f59e0b',
   delayed: '#ef4444',
   cancelled: '#64748b'
+};
+
+// Generate a concise summary of the log group - Moving this function up before it's used
+const generateStorySummary = (logs: LogEntry[]) => {
+  const categories = new Set(logs.map(log => log.activityCategory));
+  const categoryText = Array.from(categories).join(", ");
+  
+  const statusCounts = logs.reduce((acc, log) => {
+    acc[log.status] = (acc[log.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const primaryStatus = Object.entries(statusCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([status]) => status)[0];
+  
+  return `${logs.length} activities involving ${categoryText}. Mostly ${primaryStatus}.`;
 };
 
 const StorytellingView: React.FC<StorytellingViewProps> = ({ logs }) => {
@@ -77,23 +93,6 @@ const StorytellingView: React.FC<StorytellingViewProps> = ({ logs }) => {
     );
   }, [logs]);
 
-  // Generate a concise summary of the log group
-  const generateStorySummary = (logs: LogEntry[]) => {
-    const categories = new Set(logs.map(log => log.activityCategory));
-    const categoryText = Array.from(categories).join(", ");
-    
-    const statusCounts = logs.reduce((acc, log) => {
-      acc[log.status] = (acc[log.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const primaryStatus = Object.entries(statusCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([status]) => status)[0];
-    
-    return `${logs.length} activities involving ${categoryText}. Mostly ${primaryStatus}.`;
-  };
-  
   // Auto-advance story
   useEffect(() => {
     if (isPlaying && storySegments.length > 0) {
