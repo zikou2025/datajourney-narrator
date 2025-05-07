@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { question, context, videoTitle, previousMessages } = await req.json();
+    const { question, context, videoTitle, previousMessages, deepDive } = await req.json();
     
     if (!question || !context) {
       throw new Error('Question and context are required');
@@ -28,10 +28,28 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY environment variable not set');
     }
 
-    console.log(`Processing question: "${question}" for video: "${videoTitle}"`);
+    console.log(`Processing ${deepDive ? 'deep dive' : 'regular'} question: "${question}" for video: "${videoTitle}"`);
 
-    // Build the system prompt
-    const systemPrompt = `You are an AI assistant that helps users understand video transcription data. 
+    // Build the system prompt based on whether this is a deep dive or regular question
+    const systemPrompt = deepDive ? 
+      `You are an expert AI assistant specializing in detailed analysis of video transcription data.
+You will provide in-depth, comprehensive answers to questions about a transcription.
+The video title is: ${videoTitle || "Untitled Video"}.
+
+Here's the transcription context:
+${context}
+
+For this DEEP DIVE analysis:
+1. Provide a thorough, detailed answer with specific examples from the transcription
+2. Include relevant timestamps or sequence of events when applicable
+3. Make connections between different parts of the transcription that relate to the question
+4. Organize your response with clear sections if the answer is complex
+5. If appropriate, mention implications or insights that could be derived from the information
+
+Answer the user's question based ONLY on the information in the transcription context.
+If the answer cannot be determined from the context, say so clearly.
+Your answers should be comprehensive but focused on the specific question asked.` :
+      `You are an AI assistant that helps users understand video transcription data. 
 You will be given context from a video transcription and answer questions about it.
 The video title is: ${videoTitle || "Untitled Video"}.
 
@@ -86,10 +104,10 @@ Keep your answers concise, informative, and directly related to the question.`;
       body: JSON.stringify({
         contents: messages,
         generationConfig: {
-          temperature: 0.4,
+          temperature: deepDive ? 0.3 : 0.4,
           topP: 0.95,
           topK: 40,
-          maxOutputTokens: 1024,
+          maxOutputTokens: deepDive ? 2048 : 1024,
         },
       }),
     });
