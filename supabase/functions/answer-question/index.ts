@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -41,24 +42,41 @@ Answer the user's question based ONLY on the information in the transcription co
 If the answer cannot be determined from the context, say so clearly.
 Keep your answers concise, informative, and directly related to the question.`;
 
-    // Build the conversation history
-    const messages = [
-      { role: "system", content: systemPrompt }
-    ];
+    // Build the conversation history for Gemini API
+    const geminiMessages = [];
+    
+    // Add the system prompt as the first user message
+    geminiMessages.push({
+      role: "user",
+      parts: [{ text: systemPrompt }]
+    });
+
+    // Add a model response to acknowledge the system instructions
+    geminiMessages.push({
+      role: "model",
+      parts: [{ text: "I understand. I'll answer questions based only on the provided transcription context." }]
+    });
 
     // Add previous conversation context if available
     if (previousMessages && previousMessages.length > 0) {
       // Only include the last 5 messages to keep the context manageable
       const recentMessages = previousMessages.slice(-5);
-      recentMessages.forEach(msg => {
-        messages.push({ role: msg.role, content: msg.content });
-      });
+      
+      for (const msg of recentMessages) {
+        geminiMessages.push({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }]
+        });
+      }
     }
 
     // Add the current question
-    messages.push({ role: "user", content: question });
+    geminiMessages.push({
+      role: "user",
+      parts: [{ text: question }]
+    });
 
-    // Call Gemini API
+    // Call Gemini API with the correct format
     const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
     const response = await fetch(`${url}?key=${geminiApiKey}`, {
       method: 'POST',
@@ -66,7 +84,7 @@ Keep your answers concise, informative, and directly related to the question.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: messages,
+        contents: geminiMessages,
         generationConfig: {
           temperature: 0.4,
           topP: 0.95,
