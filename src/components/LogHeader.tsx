@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Search, LayoutDashboard, Map, ListFilter, Timeline, LineChart, BookOpen, MessageSquare } from 'lucide-react';
+import { Search, LayoutDashboard, Map, ListFilter, LineChart, BookOpen, MessageSquare, History } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface LogHeaderProps {
@@ -67,7 +67,7 @@ const LogHeader: React.FC<LogHeaderProps> = ({
               )}
               onClick={() => setActiveView("timeline")}
             >
-              <Timeline className="h-4 w-4" />
+              <History className="h-4 w-4" />
               Timeline
             </Button>
             <Button
