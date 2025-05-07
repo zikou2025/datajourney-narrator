@@ -31,9 +31,9 @@ serve(async (req) => {
     console.log(`Processing question: "${question}" for video: "${videoTitle}"`);
 
     // Build the system prompt
-    let systemPrompt = `You are an AI assistant that helps users understand video transcription data. 
+    const systemPrompt = `You are an AI assistant that helps users understand video transcription data. 
 You will be given context from a video transcription and answer questions about it.
-The video title is: ${videoTitle}.
+The video title is: ${videoTitle || "Untitled Video"}.
 
 Here's the transcription context:
 ${context}
@@ -43,35 +43,35 @@ If the answer cannot be determined from the context, say so clearly.
 Keep your answers concise, informative, and directly related to the question.`;
 
     // Build the conversation history for Gemini API
-    const geminiMessages = [];
+    const messages = [];
     
-    // Add the system prompt as the first user message
-    geminiMessages.push({
+    // Add the system prompt as a separate message at the beginning
+    messages.push({
       role: "user",
       parts: [{ text: systemPrompt }]
     });
-
+    
     // Add a model response to acknowledge the system instructions
-    geminiMessages.push({
-      role: "model",
+    messages.push({
+      role: "model", 
       parts: [{ text: "I understand. I'll answer questions based only on the provided transcription context." }]
     });
-
+    
     // Add previous conversation context if available
     if (previousMessages && previousMessages.length > 0) {
       // Only include the last 5 messages to keep the context manageable
       const recentMessages = previousMessages.slice(-5);
       
       for (const msg of recentMessages) {
-        geminiMessages.push({
+        messages.push({
           role: msg.role === "user" ? "user" : "model",
           parts: [{ text: msg.content }]
         });
       }
     }
-
+    
     // Add the current question
-    geminiMessages.push({
+    messages.push({
       role: "user",
       parts: [{ text: question }]
     });
@@ -84,7 +84,7 @@ Keep your answers concise, informative, and directly related to the question.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: geminiMessages,
+        contents: messages,
         generationConfig: {
           temperature: 0.4,
           topP: 0.95,
