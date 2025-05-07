@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +14,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 
 interface TranscriptionInputProps {
-  onLogsGenerated: (logs: LogEntry[]) => void;
+  onLogsGenerated: (logs: LogEntry[], title?: string) => void;
 }
 
 const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated }) => {
@@ -87,7 +86,8 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
         };
       }) as LogEntry[];
 
-      onLogsGenerated(processedLogs);
+      // Pass both the processed logs and the video title to the handler
+      onLogsGenerated(processedLogs, videoTitle || 'Untitled Video');
       
       toast({
         title: "Success",

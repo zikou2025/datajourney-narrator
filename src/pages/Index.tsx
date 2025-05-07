@@ -10,17 +10,19 @@ import LogDashboard from "@/components/LogDashboard";
 import LogTimeline from "@/components/LogTimeline";
 import TimeSeriesView from "@/components/TimeSeriesView";
 import StorytellingView from "@/components/StorytellingView";
+import TranscriptionQA from "@/components/TranscriptionQA";
 import { mockLogs } from "@/lib/mockData";
 import { toast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'qa'>('dashboard');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [videoTitle, setVideoTitle] = useState<string>("");
 
   // Load mock data on initial render
   useEffect(() => {
@@ -48,7 +50,11 @@ const Index = () => {
   }, [logs, searchQuery]);
 
   // Handle new logs from transcription input
-  const handleNewLogs = (newLogs: LogEntry[]) => {
+  const handleNewLogs = (newLogs: LogEntry[], title?: string) => {
+    if (title) {
+      setVideoTitle(title);
+    }
+    
     setLogs(prev => {
       // Filter out any duplicate logs by ID
       const existingIds = new Set(prev.map(log => log.id));
@@ -79,6 +85,8 @@ const Index = () => {
         return <TimeSeriesView logs={logs} />;
       case 'story':
         return <StorytellingView logs={logs} />;
+      case 'qa':
+        return <TranscriptionQA logs={logs} videoTitle={videoTitle} />;
       default:
         return <LogDashboard logs={logs} />;
     }
@@ -102,7 +110,9 @@ const Index = () => {
       )}
       
       <div className="container mx-auto py-6 px-4">
-        <TranscriptionInput onLogsGenerated={handleNewLogs} />
+        <TranscriptionInput 
+          onLogsGenerated={handleNewLogs} 
+        />
         
         {renderActiveView()}
       </div>
