@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import {
   Send, Loader2, Sparkles, MessageSquare, Lightbulb, 
   Settings2, FileText, ArrowDownToLine, Clock, AlertCircle, 
   RefreshCcw, Database, Brain, PanelLeft, ChevronRight, ChevronDown,
-  ChevronUp, CheckCircle2, XCircle, HelpCircle, Filter
+  ChevronUp, CheckCircle2, XCircle, HelpCircle, Filter, Youtube
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,6 +65,8 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
   const [currentLevel, setCurrentLevel] = useState<string | null>(null);
   const [expandedLevel, setExpandedLevel] = useState<string | null>(null);
   const [progressPercent, setProgressPercent] = useState(0);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [isExtractingTranscription, setIsExtractingTranscription] = useState(false);
   const { toast } = useToast();
 
   // Group logs by episode ID to represent different transcriptions
@@ -152,7 +153,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       }).join('\n');
 
       // Call the Supabase Edge Function to process the question
-      const { data, error, status } = await supabase.functions.invoke('answer-question', {
+      const { data, error } = await supabase.functions.invoke('answer-question', {
         body: { 
           question,
           context: logsContext,
@@ -168,7 +169,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       }
 
       // Handle rate limiting
-      if (status === 429) {
+      if (data?.error === "API rate limit exceeded") {
         console.log("Rate limited response:", data);
         setRateLimited(true);
         setRetryIn(data?.retryAfter || 30);
@@ -235,7 +236,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       setProgressPercent(30);
       
       // Call the Supabase Edge Function to generate Q&A
-      const { data, error, status } = await supabase.functions.invoke('answer-question', {
+      const { data, error } = await supabase.functions.invoke('answer-question', {
         body: { 
           context: logsContext,
           videoTitle: selectedTranscription.title,
@@ -250,7 +251,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       }
 
       // Handle rate limiting
-      if (status === 429) {
+      if (data?.error === "API rate limit exceeded") {
         console.log("Rate limited response:", data);
         setRateLimited(true);
         setRetryIn(data?.retryAfter || 30);
@@ -312,6 +313,63 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
     }
   };
 
+  const extractYouTubeTranscription = async () => {
+    if (!youtubeUrl || isExtractingTranscription) return;
+    
+    // Basic validation
+    if (!youtubeUrl.includes('youtube.com/') && !youtubeUrl.includes('youtu.be/')) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid YouTube URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsExtractingTranscription(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-youtube-transcription', {
+        body: { youtubeUrl }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.message || data.error);
+      }
+
+      if (data?.transcription) {
+        // Here you would typically save the transcription to your logs
+        // For now, we'll display a success message
+        toast({
+          title: "Transcription Extracted",
+          description: `Successfully extracted transcription from ${data.videoTitle || "YouTube video"}`,
+        });
+
+        // Reset the URL input
+        setYoutubeUrl('');
+
+        // TODO: Save the transcription data and update the transcription groups
+        // This would require modifying your backend to save the transcription
+      } else {
+        throw new Error("No transcription data returned");
+      }
+    } catch (error: any) {
+      console.error("Error extracting transcription:", error);
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to extract transcription. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExtractingTranscription(false);
+    }
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -369,6 +427,40 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
             </div>
           )}
         </div>
+
+        {/* YouTube Transcription Extractor */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Youtube className="h-5 w-5 text-red-500" />
+              Extract YouTube Transcription
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Enter a YouTube video URL to extract its transcription using Gemini AI
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="YouTube video URL (e.g., https://www.youtube.com/watch?v=...)"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                onClick={extractYouTubeTranscription}
+                disabled={isExtractingTranscription || !youtubeUrl}
+              >
+                {isExtractingTranscription ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowDownToLine className="h-4 w-4 mr-2" />
+                )}
+                {isExtractingTranscription ? "Extracting..." : "Extract"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {!selectedTranscriptionId && (
           <div className="bg-muted/30 rounded-md p-6 flex flex-col items-center justify-center text-center">

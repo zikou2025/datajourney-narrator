@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TimeSeriesView from "./components/TimeSeriesView";
 import StorytellingView from "./components/StorytellingView";
+import TranscriptionQA from "./components/TranscriptionQA";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/timeseries" element={<TimeSeriesView logs={[]} />} />
           <Route path="/story" element={<StorytellingView logs={[]} />} />
+          <Route path="/transcription" element={<TranscriptionQA logs={[]} />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
