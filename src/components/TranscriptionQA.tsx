@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogEntry } from "@/lib/types";
+import TranscriptionInput from './TranscriptionInput';
 import { 
   Send, Loader2, Sparkles, MessageSquare, Lightbulb, 
   Settings2, FileText, ArrowDownToLine, Clock, AlertCircle, 
@@ -50,6 +51,13 @@ interface QuestionLevel {
   questions: QAPair[];
 }
 
+interface ExtractedTranscriptionData {
+  transcription: string;
+  videoTitle: string;
+  videoId: string;
+  summary?: string;
+}
+
 const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) => {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -67,6 +75,8 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
   const [progressPercent, setProgressPercent] = useState(0);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [isExtractingTranscription, setIsExtractingTranscription] = useState(false);
+  const [extractedTranscription, setExtractedTranscription] = useState<ExtractedTranscriptionData | null>(null);
+  const transcriptionInputRef = useRef<any>(null);
   const { toast } = useToast();
 
   // Group logs by episode ID to represent different transcriptions
@@ -110,6 +120,13 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       setRateLimited(false);
     }
   }, [rateLimited, retryIn]);
+
+  // Effect to pass extracted transcription to the TranscriptionInput component
+  useEffect(() => {
+    if (extractedTranscription && transcriptionInputRef.current) {
+      transcriptionInputRef.current.loadTranscription(extractedTranscription);
+    }
+  }, [extractedTranscription]);
 
   // Toggle answer visibility
   const toggleAnswer = (questionId: string) => {
@@ -342,8 +359,14 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       }
 
       if (data?.transcription) {
-        // Here you would typically save the transcription to your logs
-        // For now, we'll display a success message
+        // Set the extracted transcription data to be used by the TranscriptionInput component
+        setExtractedTranscription({
+          transcription: data.transcription,
+          videoTitle: data.videoTitle || 'YouTube Video',
+          videoId: data.videoId,
+          summary: data.summary
+        });
+
         toast({
           title: "Transcription Extracted",
           description: `Successfully extracted transcription from ${data.videoTitle || "YouTube video"}`,
@@ -351,9 +374,9 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
 
         // Reset the URL input
         setYoutubeUrl('');
-
-        // TODO: Save the transcription data and update the transcription groups
-        // This would require modifying your backend to save the transcription
+        
+        // Switch to the input tab
+        setActiveTab('chat');
       } else {
         throw new Error("No transcription data returned");
       }
@@ -370,6 +393,10 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
     }
   };
 
+  const handleLogsGenerated = (newLogs: LogEntry[], newTitle?: string) => {
+    // ... keep existing code (logs generation handler if any)
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -382,6 +409,12 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* TranscriptionInput component */}
+        <TranscriptionInput 
+          onLogsGenerated={handleLogsGenerated} 
+          ref={transcriptionInputRef}
+        />
+        
         {/* Transcription selector */}
         <div className="mb-6">
           <Label htmlFor="transcription-select" className="mb-2 block">

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CardContent, Card } from "@/components/ui/card";
-import { Clock, FileText, Loader2, Sparkles, Calendar, CalendarRange } from 'lucide-react';
+import { Clock, FileText, Loader2, Sparkles, Calendar } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogEntry } from "@/lib/types";
@@ -17,13 +18,39 @@ interface TranscriptionInputProps {
   onLogsGenerated: (logs: LogEntry[], title?: string) => void;
 }
 
-const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated }) => {
+interface ExtractedTranscriptionData {
+  transcription: string;
+  videoTitle: string;
+  videoId: string;
+  summary?: string;
+}
+
+const TranscriptionInput = forwardRef<
+  { loadTranscription: (data: ExtractedTranscriptionData) => void },
+  TranscriptionInputProps
+>(({ onLogsGenerated }, ref) => {
   const [transcription, setTranscription] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDate, setVideoDate] = useState<Date | undefined>(new Date());
   const [videoLocation, setVideoLocation] = useState('');
   const { toast } = useToast();
+
+  // Expose loadTranscription method to parent components
+  useImperativeHandle(ref, () => ({
+    loadTranscription: (data: ExtractedTranscriptionData) => {
+      setTranscription(data.transcription);
+      setVideoTitle(data.videoTitle || 'YouTube Video');
+      setVideoDate(new Date());
+      setVideoLocation('YouTube');
+      
+      // Show a toast notification
+      toast({
+        title: "Transcription loaded",
+        description: `Loaded transcription from "${data.videoTitle || 'YouTube Video'}"`,
+      });
+    }
+  }));
 
   const processTranscription = async () => {
     if (!transcription.trim()) {
@@ -220,6 +247,8 @@ const TranscriptionInput: React.FC<TranscriptionInputProps> = ({ onLogsGenerated
       </CardContent>
     </Card>
   );
-};
+});
+
+TranscriptionInput.displayName = "TranscriptionInput";
 
 export default TranscriptionInput;
