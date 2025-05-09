@@ -85,7 +85,7 @@ Format the transcription as a chronological record of what's discussed in the vi
 After providing the transcription, also include a brief (2-3 sentence) summary of the video's content.`;
 
     // Call Gemini API
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
     const response = await fetch(`${url}?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
