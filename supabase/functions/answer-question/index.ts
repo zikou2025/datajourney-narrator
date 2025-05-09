@@ -28,13 +28,13 @@ serve(async (req) => {
       throw new Error('GEMINI_API_KEY environment variable not set');
     }
 
-    console.log(`Processing ${deepDive ? 'deep dive' : 'regular'} question: "${question}" for video: "${videoTitle}"`);
+    console.log(`Processing ${deepDive ? 'deep dive' : 'regular'} question: "${question}" for transcription: "${videoTitle}"`);
 
     // Build the system prompt based on whether this is a deep dive or regular question
     const systemPrompt = deepDive ? 
       `You are an expert AI assistant specializing in detailed analysis of video transcription data.
 You will provide in-depth, comprehensive answers to questions about a transcription.
-The video title is: ${videoTitle || "Untitled Video"}.
+The transcription title is: ${videoTitle || "Untitled Transcription"}.
 
 Here's the transcription context:
 ${context}
@@ -50,8 +50,8 @@ Answer the user's question based ONLY on the information in the transcription co
 If the answer cannot be determined from the context, say so clearly.
 Your answers should be comprehensive but focused on the specific question asked.` :
       `You are an AI assistant that helps users understand video transcription data. 
-You will be given context from a video transcription and answer questions about it.
-The video title is: ${videoTitle || "Untitled Video"}.
+You will be given context from a transcription and answer questions about it.
+The transcription title is: ${videoTitle || "Untitled Transcription"}.
 
 Here's the transcription context:
 ${context}
