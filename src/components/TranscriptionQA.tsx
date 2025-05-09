@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogEntry } from "@/lib/types";
-import { Send, Loader2, Sparkles, MessageSquare, Lightbulb, Settings2, FileText, ArrowDownToLine, Clock } from 'lucide-react';
+import { Send, Loader2, Sparkles, MessageSquare, Lightbulb, Settings2, FileText, ArrowDownToLine, Clock, AlertCircle, RefreshCcw } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from 'date-fns';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface TranscriptionQAProps {
   logs: LogEntry[];
@@ -39,6 +40,8 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
   const [deepDiveEnabled, setDeepDiveEnabled] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
   const [selectedTranscriptionId, setSelectedTranscriptionId] = useState<string | null>(null);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [retryIn, setRetryIn] = useState(0);
   const { toast } = useToast();
 
   // Group logs by episode ID to represent different transcriptions
@@ -70,6 +73,19 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
     });
   }, [selectedTranscriptionId, transcriptionGroups]);
 
+  // Countdown timer for rate limited state
+  React.useEffect(() => {
+    if (rateLimited && retryIn > 0) {
+      const timer = setTimeout(() => {
+        setRetryIn(prev => prev - 1);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    } else if (rateLimited && retryIn === 0) {
+      setRateLimited(false);
+    }
+  }, [rateLimited, retryIn]);
+
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim() || isProcessing || !selectedTranscription) return;
@@ -91,7 +107,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       }).join('\n');
 
       // Call the Supabase Edge Function to process the question
-      const { data, error } = await supabase.functions.invoke('answer-question', {
+      const { data, error, status } = await supabase.functions.invoke('answer-question', {
         body: { 
           question,
           context: logsContext,
@@ -101,7 +117,22 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+
+      // Handle rate limiting
+      if (status === 429) {
+        console.log("Rate limited response:", data);
+        setRateLimited(true);
+        setRetryIn(data?.retryAfter || 30);
+        throw new Error(data?.message || "Rate limit exceeded. Please try again later.");
+      }
+
+      // Check if there's an error message in the response data
+      if (data?.error) {
+        throw new Error(data.message || data.error);
+      }
 
       // Add assistant message
       const assistantMessage: ChatMessage = {
@@ -114,9 +145,20 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error processing question:", error);
+      
+      // Add a system message about the error
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: `Sorry, there was an error: ${error.message || "An unexpected error occurred"}. ${rateLimited ? `Please wait ${retryIn} seconds before trying again.` : "Please try again later."}`,
+        timestamp: new Date(),
+        isDeepDive: false
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
       toast({
         title: "Error",
-        description: "Failed to process your question. Please try again.",
+        description: error.message || "Failed to process your question. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -224,6 +266,26 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
             </TabsList>
             
             <TabsContent value="chat" className="space-y-4 mt-4">
+              {rateLimited && (
+                <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle>API Rate Limit Reached</AlertTitle>
+                  <AlertDescription className="flex items-center justify-between">
+                    <span>Please wait {retryIn} seconds before asking another question.</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={retryIn > 0}
+                      className="text-amber-700 border-amber-300"
+                      onClick={() => setRateLimited(false)}
+                    >
+                      <RefreshCcw className="h-3 w-3 mr-1" />
+                      Try again
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="flex items-center space-x-2">
                 <Switch 
                   id="deep-dive" 
@@ -259,7 +321,9 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                           className={`max-w-[80%] rounded-lg p-3 ${
                             msg.role === 'user' 
                               ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted'
+                              : msg.content.includes('error') || msg.content.includes('Error')
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-muted'
                           }`}
                         >
                           <div className="text-sm break-words whitespace-pre-wrap">{msg.content}</div>
@@ -299,12 +363,12 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                   placeholder={deepDiveEnabled 
                     ? "Ask a detailed question for deep dive analysis..." 
                     : "Ask a question about the transcription..."}
-                  disabled={isProcessing || !selectedTranscription}
+                  disabled={isProcessing || !selectedTranscription || rateLimited}
                   className="flex-1"
                 />
                 <Button 
                   type="submit" 
-                  disabled={isProcessing || !question.trim() || !selectedTranscription}
+                  disabled={isProcessing || !question.trim() || !selectedTranscription || rateLimited}
                 >
                   {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
@@ -330,7 +394,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                       variant="outline" 
                       className="justify-start text-left h-auto py-2"
                       onClick={() => handleSuggestionClick(suggestion)}
-                      disabled={!selectedTranscription}
+                      disabled={!selectedTranscription || rateLimited}
                     >
                       {suggestion}
                     </Button>
@@ -352,7 +416,7 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                           setDeepDiveEnabled(true);
                           handleSuggestionClick(suggestion);
                         }}
-                        disabled={!selectedTranscription}
+                        disabled={!selectedTranscription || rateLimited}
                       >
                         {suggestion}
                       </Button>
@@ -405,6 +469,13 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                     This AI assistant analyzes your transcription data to answer questions and provide insights.
                     Use Deep Dive mode for more comprehensive analysis of complex topics in the transcription.
                   </p>
+                  <Alert className="mt-3 bg-blue-50 text-blue-800 border-blue-200">
+                    <AlertTitle className="text-sm">API Usage Information</AlertTitle>
+                    <AlertDescription className="text-xs">
+                      This feature uses the Gemini AI API, which has rate limits. If you encounter a rate limit error, 
+                      wait a few moments before trying again. For high-volume usage, consider upgrading your API plan.
+                    </AlertDescription>
+                  </Alert>
                 </div>
                 
                 {messages.length > 0 && (

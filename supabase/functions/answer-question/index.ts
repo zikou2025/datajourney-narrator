@@ -94,51 +94,88 @@ Keep your answers concise, informative, and directly related to the question.`;
       parts: [{ text: question }]
     });
 
-    // Call Gemini API with the correct format
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
-    const response = await fetch(`${url}?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: messages,
-        generationConfig: {
-          temperature: deepDive ? 0.3 : 0.4,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: deepDive ? 2048 : 1024,
+    try {
+      // Call Gemini API with the correct format
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
+      const response = await fetch(`${url}?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: messages,
+          generationConfig: {
+            temperature: deepDive ? 0.3 : 0.4,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: deepDive ? 2048 : 1024,
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Gemini API Error: ${response.status} - ${errorText}`);
-      throw new Error(`Gemini API Error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Received response from Gemini API");
-    
-    // Extract the answer from the Gemini response
-    let answer = "I couldn't generate an answer based on the transcription.";
-    if (data.candidates && data.candidates.length > 0 && 
-        data.candidates[0].content && 
-        data.candidates[0].content.parts && 
-        data.candidates[0].content.parts.length > 0) {
-      answer = data.candidates[0].content.parts[0].text;
-    }
-
-    return new Response(
-      JSON.stringify({ answer }),
-      {
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        },
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Gemini API Error: ${response.status} - ${errorText}`);
+        
+        // Handle rate limiting specifically
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ 
+              error: "API rate limit exceeded", 
+              message: "The Gemini API rate limit has been reached. Please try again in a few moments.",
+              retryAfter: 30 // Suggest waiting 30 seconds
+            }),
+            {
+              status: 429,
+              headers: { 
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+                'Retry-After': '30'
+              },
+            }
+          );
+        }
+        
+        throw new Error(`Gemini API Error: ${response.status}`);
       }
-    );
+
+      const data = await response.json();
+      console.log("Received response from Gemini API");
+      
+      // Extract the answer from the Gemini response
+      let answer = "I couldn't generate an answer based on the transcription.";
+      if (data.candidates && data.candidates.length > 0 && 
+          data.candidates[0].content && 
+          data.candidates[0].content.parts && 
+          data.candidates[0].content.parts.length > 0) {
+        answer = data.candidates[0].content.parts[0].text;
+      }
+
+      return new Response(
+        JSON.stringify({ answer }),
+        {
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      return new Response(
+        JSON.stringify({ 
+          error: "API Error", 
+          message: "There was a problem with the AI service. Please try again later." 
+        }),
+        {
+          status: 500,
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          },
+        }
+      );
+    }
 
   } catch (error) {
     console.error("Error in answer-question function:", error);
