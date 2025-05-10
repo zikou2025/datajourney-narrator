@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -868,4 +869,18 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                   </p>
                   <Alert className="mt-3 bg-blue-50 text-blue-800 border-blue-200">
                     <AlertTitle className="text-sm">API Usage Information</AlertTitle>
-                    <AlertDescription className="
+                    <AlertDescription className="text-xs">
+                      Each question consumes API credits. Deep Dive mode uses more credits but provides more detailed analysis.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default TranscriptionQA;
