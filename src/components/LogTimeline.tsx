@@ -1,9 +1,19 @@
-import React, { useMemo } from 'react';
+
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TransitionLayout from './TransitionLayout';
 import { LogEntry } from '@/lib/types';
-import { Calendar, Clock, MapPin, Tag, FileText } from 'lucide-react';
+import { Calendar, Clock, MapPin, Tag, FileText, Filter, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { format } from 'date-fns';
 
 interface LogTimelineProps {
   logs: LogEntry[];
@@ -22,15 +32,40 @@ const STATUS_STYLES = {
 };
 
 const LogTimeline: React.FC<LogTimelineProps> = ({ logs, onSelectLog, className }) => {
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+
+  // Toggle date expansion
+  const toggleDateExpansion = (date: string) => {
+    const newSet = new Set(expandedDates);
+    if (newSet.has(date)) {
+      newSet.delete(date);
+    } else {
+      newSet.add(date);
+    }
+    setExpandedDates(newSet);
+  };
+
   // Memoize sorted and grouped logs to avoid recalculation on re-renders
-  const { logsByDate, dates } = useMemo(() => {
-    // Sort logs by timestamp (newest first)
-    const sortedLogs = [...logs].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+  const { logsByDate, dates, categories, locations } = useMemo(() => {
+    // Sort logs by timestamp (newest first or oldest first)
+    const sortedLogs = [...logs].sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return sortDirection === 'desc' ? timeB - timeA : timeA - timeB;
+    });
+    
+    // Apply category filter if active
+    const filteredLogs = activeFilter 
+      ? sortedLogs.filter(log => 
+          log.activityCategory === activeFilter ||
+          log.location === activeFilter
+        )
+      : sortedLogs;
     
     // Group logs by date
-    const grouped = sortedLogs.reduce((groups, log) => {
+    const grouped = filteredLogs.reduce((groups, log) => {
       const date = new Date(log.timestamp).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
@@ -44,11 +79,17 @@ const LogTimeline: React.FC<LogTimelineProps> = ({ logs, onSelectLog, className 
       return groups;
     }, {} as Record<string, LogEntry[]>);
     
+    // Extract all unique categories and locations for filtering
+    const uniqueCategories = Array.from(new Set(logs.map(log => log.activityCategory)));
+    const uniqueLocations = Array.from(new Set(logs.map(log => log.location)));
+    
     return { 
       logsByDate: grouped, 
-      dates: Object.keys(grouped)
+      dates: Object.keys(grouped),
+      categories: uniqueCategories,
+      locations: uniqueLocations
     };
-  }, [logs]);
+  }, [logs, sortDirection, activeFilter]);
   
   // Animation variants for better consistency
   const containerVariants = {
@@ -91,9 +132,82 @@ const LogTimeline: React.FC<LogTimelineProps> = ({ logs, onSelectLog, className 
   };
 
   const isEmpty = dates.length === 0;
+
+  // Toggle sort direction
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+  };
   
   return (
     <TransitionLayout animation="fade" className={cn("w-full", className)}>
+      {/* Timeline Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 glass p-4 rounded-xl">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={toggleSortDirection}
+            className="flex items-center gap-1"
+          >
+            <ArrowUpDown className="w-4 h-4 mr-1" />
+            {sortDirection === 'desc' ? 'Newest First' : 'Oldest First'}
+          </Button>
+          
+          <Badge variant="outline" className="text-xs">
+            {logs.length} events
+          </Badge>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Filter className="w-4 h-4 mr-1" />
+                {activeFilter ? `Filter: ${activeFilter}` : 'Filter Timeline'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem 
+                onClick={() => setActiveFilter(null)}
+                className={!activeFilter ? "bg-accent/50" : ""}
+              >
+                All Events
+              </DropdownMenuItem>
+              
+              {categories.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Categories</div>
+                  {categories.map(category => (
+                    <DropdownMenuItem 
+                      key={`cat-${category}`}
+                      onClick={() => setActiveFilter(category)}
+                      className={activeFilter === category ? "bg-accent/50" : ""}
+                    >
+                      {category}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              
+              {locations.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Locations</div>
+                  {locations.map(location => (
+                    <DropdownMenuItem 
+                      key={`loc-${location}`}
+                      onClick={() => setActiveFilter(location)}
+                      className={activeFilter === location ? "bg-accent/50" : ""}
+                    >
+                      {location}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
       {isEmpty ? (
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <p className="text-muted-foreground">No activity logs available</p>
@@ -120,16 +234,22 @@ const LogTimeline: React.FC<LogTimelineProps> = ({ logs, onSelectLog, className 
                 exit={{ opacity: 0 }}
               >
                 <div className="flex justify-center mb-6">
-                  <span 
-                    className="glass px-4 py-2 rounded-full text-sm font-medium inline-flex items-center"
+                  <button
+                    onClick={() => toggleDateExpansion(date)} 
+                    className="glass px-4 py-2 rounded-full text-sm font-medium inline-flex items-center hover:shadow-md transition-all"
                     aria-label={`Events from ${date}`}
                   >
                     <Calendar className="w-4 h-4 mr-2 text-primary/70" aria-hidden="true" />
                     {date}
-                  </span>
+                    {expandedDates.has(date) ? (
+                      <ChevronUp className="ml-2 w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="ml-2 w-4 h-4" />
+                    )}
+                  </button>
                 </div>
                 
-                {logsByDate[date].map((log, logIndex) => (
+                {(expandedDates.has(date) || dateIndex === 0) && logsByDate[date].map((log, logIndex) => (
                   <motion.div
                     key={log.id}
                     variants={logItemVariants}
@@ -206,6 +326,19 @@ const LogTimeline: React.FC<LogTimelineProps> = ({ logs, onSelectLog, className 
                     </div>
                   </motion.div>
                 ))}
+                
+                {!expandedDates.has(date) && dateIndex !== 0 && (
+                  <div className="flex justify-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => toggleDateExpansion(date)}
+                      className="text-xs text-muted-foreground"
+                    >
+                      Show {logsByDate[date].length} events from this date
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -9,11 +8,11 @@ import {
 import { LogEntry, TimeSeriesData } from '@/lib/types';
 import { 
   BarChart3, CalendarDays, Clock, Filter, LineChart as LineChartIcon, 
-  List, PieChart, RefreshCw, SlidersHorizontal, CalendarIcon
+  List, PieChart, RefreshCw, SlidersHorizontal, CalendarIcon, TrendingUp
 } from 'lucide-react';
-import { format, subDays, differenceInDays, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
+import { format, subDays, differenceInDays, parseISO, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
@@ -37,7 +36,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Slider } from "@/components/ui/slider";
 import TransitionLayout from './TransitionLayout';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TimeSeriesViewProps {
   logs: LogEntry[];
@@ -60,6 +61,66 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
   const [selectedValue, setSelectedValue] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<number>(30); // days
   const [activeTab, setActiveTab] = useState('trends');
+  const [customTimeRange, setCustomTimeRange] = useState<[Date, Date]>([subDays(new Date(), 30), new Date()]);
+  const [transcriptionData, setTranscriptionData] = useState<any[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [totalLogCount, setTotalLogCount] = useState<number>(0);
+  const [allLogs, setAllLogs] = useState<LogEntry[]>([]);
+  const [showHistoricalData, setShowHistoricalData] = useState(true);
+
+  // Fetch all logs from database for comprehensive analysis
+  useEffect(() => {
+    const fetchAllTranscriptionLogs = async () => {
+      setIsDataLoading(true);
+      try {
+        // Get transcriptions
+        const { data: transcriptions, error: transcriptionsError } = await supabase
+          .from('transcriptions')
+          .select('id, title, created_at')
+          .order('created_at', { ascending: false });
+        
+        if (transcriptionsError) throw transcriptionsError;
+        
+        // Get all logs
+        const { data: logsData, error: logsError, count } = await supabase
+          .from('transcription_logs')
+          .select('log_data, transcription_id, created_at', { count: 'exact' })
+          .order('created_at', { ascending: false });
+        
+        if (logsError) throw logsError;
+        
+        if (logsData && transcriptions) {
+          // Process logs
+          const allLogsProcessed: LogEntry[] = logsData.map((log) => {
+            const logData = log.log_data as unknown;
+            return logData as LogEntry;
+          });
+          
+          // Map transcriptions to their log counts
+          const transMap = transcriptions.map(trans => {
+            const relatedLogs = logsData.filter(log => log.transcription_id === trans.id);
+            return {
+              id: trans.id,
+              title: trans.title,
+              created_at: trans.created_at,
+              logCount: relatedLogs.length,
+              firstLogDate: relatedLogs.length > 0 ? new Date(relatedLogs[0].created_at) : new Date(trans.created_at)
+            };
+          });
+          
+          setTranscriptionData(transMap);
+          setTotalLogCount(count || 0);
+          setAllLogs(allLogsProcessed);
+        }
+      } catch (error) {
+        console.error("Error fetching transcription data:", error);
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+    
+    fetchAllTranscriptionLogs();
+  }, []);
 
   // Extract unique values for filtering
   const categories = useMemo(() => 
@@ -79,13 +140,26 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
 
   // Calculate time series data
   const timeSeriesData = useMemo(() => {
-    if (logs.length === 0) return [];
+    const logsToAnalyze = showHistoricalData ? [...logs, ...allLogs] : logs;
+    
+    if (logsToAnalyze.length === 0) return [];
+    
+    // Remove duplicates based on ID
+    const uniqueLogsMap = new Map<string, LogEntry>();
+    logsToAnalyze.forEach(log => {
+      if (!uniqueLogsMap.has(log.id)) {
+        uniqueLogsMap.set(log.id, log);
+      }
+    });
+    const uniqueLogs = Array.from(uniqueLogsMap.values());
     
     // Filter logs by time range
-    const cutoffDate = subDays(new Date(), timeRange);
-    const filteredLogs = logs.filter(log => {
+    const startDate = customTimeRange[0];
+    const endDate = customTimeRange[1];
+    
+    const filteredLogs = uniqueLogs.filter(log => {
       const timestamp = new Date(log.timestamp);
-      return timestamp >= cutoffDate;
+      return timestamp >= startDate && timestamp <= endDate;
     });
     
     // Filter logs by selected value if applicable
@@ -177,7 +251,7 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
     
     // Sort by timestamp
     return chartData.sort((a, b) => a.timestamp - b.timestamp);
-  }, [logs, timeRange, groupBy, filterBy, selectedValue, categories, locations, statuses]);
+  }, [logs, allLogs, showHistoricalData, customTimeRange, groupBy, filterBy, selectedValue, categories, locations, statuses]);
 
   // Get labels for the chart
   const getChartElements = () => {
@@ -425,6 +499,132 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
       </div>
     );
   };
+  
+  // New function to render the transcription timeline
+  const renderTranscriptionTimeline = () => {
+    if (transcriptionData.length === 0) {
+      return (
+        <div className="h-[300px] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium">No transcriptions available</p>
+            <p className="text-muted-foreground">Upload transcriptions to see timeline data</p>
+          </div>
+        </div>
+      );
+    }
+
+    const timelineData = transcriptionData.map(trans => ({
+      id: trans.id,
+      title: trans.title || 'Untitled Transcription',
+      date: new Date(trans.created_at),
+      logCount: trans.logCount,
+      formattedDate: format(new Date(trans.created_at), 'MMM d, yyyy')
+    }));
+    
+    return (
+      <div className="space-y-6">
+        <div className="relative pt-6 pb-12">
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-border" />
+          
+          {timelineData.map((item, index) => (
+            <div key={item.id} className="relative mb-6 pl-6">
+              <div className="absolute left-[-5px] top-1 w-3 h-3 rounded-full bg-primary border-2 border-background" />
+              <div className="glass p-4 rounded-xl">
+                <div className="flex flex-wrap justify-between items-start gap-2">
+                  <div>
+                    <h4 className="font-medium truncate max-w-xs">{item.title}</h4>
+                    <div className="text-xs text-muted-foreground flex items-center">
+                      <Calendar className="w-3 h-3 mr-1" />
+                      {item.formattedDate}
+                    </div>
+                  </div>
+                  <Badge>{item.logCount} logs</Badge>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // New Tab for Cross-Transcription Analysis
+  const renderCrossTranscriptionTab = () => {
+    // Calculate total logs by day across all transcriptions
+    const logsByDay = allLogs.reduce((acc, log) => {
+      const date = format(new Date(log.timestamp), 'yyyy-MM-dd');
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const chartData = Object.entries(logsByDay)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cross-Transcription Activity</CardTitle>
+            <CardDescription>
+              Analyzing {totalLogCount} logs across {transcriptionData.length} transcriptions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] mb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(date) => format(new Date(date), 'MM/dd')}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <RechartsTooltip
+                    formatter={(value: number) => [`${value} logs`, 'Count']}
+                    labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#4f46e5"
+                    fill="#4f46e5"
+                    fillOpacity={0.6}
+                    name="Log Count"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm font-medium">Historical Data</div>
+                <div className="text-xs text-muted-foreground">
+                  Include logs from all transcriptions in analysis
+                </div>
+              </div>
+              <Button
+                variant={showHistoricalData ? "default" : "outline"}
+                onClick={() => setShowHistoricalData(!showHistoricalData)}
+              >
+                {showHistoricalData ? "Enabled" : "Disabled"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Transcription Timeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {renderTranscriptionTimeline()}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   // Compute activity metrics
   const activityMetrics = useMemo(() => {
@@ -535,7 +735,7 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
   }, [logs]);
 
   // Loading skeletons
-  if (isLoading) {
+  if (isLoading || isDataLoading) {
     return (
       <TransitionLayout animation="fade" className="w-full">
         <Card>
@@ -561,7 +761,7 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
   }
 
   // Empty state
-  if (logs.length === 0) {
+  if (logs.length === 0 && allLogs.length === 0) {
     return (
       <TransitionLayout animation="fade" className="w-full">
         <Card>
@@ -597,7 +797,10 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setTimeRange(7)} 
+                onClick={() => {
+                  setCustomTimeRange([subDays(new Date(), 7), new Date()]);
+                  setTimeRange(7);
+                }} 
                 className={timeRange === 7 ? "bg-primary text-primary-foreground" : ""}
               >
                 7 Days
@@ -605,7 +808,10 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setTimeRange(30)} 
+                onClick={() => {
+                  setCustomTimeRange([subDays(new Date(), 30), new Date()]);
+                  setTimeRange(30);
+                }} 
                 className={timeRange === 30 ? "bg-primary text-primary-foreground" : ""}
               >
                 30 Days
@@ -613,7 +819,10 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setTimeRange(90)} 
+                onClick={() => {
+                  setCustomTimeRange([subDays(new Date(), 90), new Date()]);
+                  setTimeRange(90);
+                }} 
                 className={timeRange === 90 ? "bg-primary text-primary-foreground" : ""}
               >
                 90 Days
@@ -621,7 +830,10 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setTimeRange(365)} 
+                onClick={() => {
+                  setCustomTimeRange([subDays(new Date(), 365), new Date()]);
+                  setTimeRange(365);
+                }} 
                 className={timeRange === 365 ? "bg-primary text-primary-foreground" : ""}
               >
                 All
@@ -644,6 +856,10 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
                 <TabsTrigger value="patterns" className="px-4">
                   <CalendarDays className="w-4 h-4 mr-2" />
                   Patterns
+                </TabsTrigger>
+                <TabsTrigger value="cross" className="px-4">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Cross-Transcription
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -831,7 +1047,14 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
                   </div>
                 </div>
                 
-                <Button size="sm" variant="outline" className="flex items-center gap-1">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => {
+                    setCustomTimeRange([subDays(new Date(), timeRange), new Date()]);
+                  }}
+                  className="flex items-center gap-1"
+                >
                   <RefreshCw className="h-3.5 w-3.5 mr-1" />
                   Refresh
                 </Button>
@@ -843,7 +1066,7 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
                 {logs.length > 0 && (
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-1" />
-                    Showing {timeSeriesData.length} time periods with {logs.length} log entries
+                    Showing {timeSeriesData.length} time periods with {logs.length + (showHistoricalData ? allLogs.length : 0)} log entries
                   </div>
                 )}
               </div>
@@ -1111,6 +1334,10 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
                   </Card>
                 </div>
               </div>
+            </TabsContent>
+            
+            <TabsContent value="cross" className="p-6">
+              {renderCrossTranscriptionTab()}
             </TabsContent>
           </Tabs>
         </CardContent>

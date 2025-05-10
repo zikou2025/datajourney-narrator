@@ -1,14 +1,15 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Calendar, MapPin, Tag, Users, ChevronRight, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { X, Search, Calendar, MapPin, Tag, Users, ChevronRight, AlertTriangle, CheckCircle2, XCircle, Clock, TrendingUp } from 'lucide-react';
 import { LogEntry } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, isSameDay, subDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface LogSearchProps {
   isOpen: boolean;
@@ -34,10 +35,36 @@ const LogSearch: React.FC<LogSearchProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<LogEntry[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'story'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'story' | 'analytics'>('list');
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState('all');
 
+  // Store search terms in local storage
+  useEffect(() => {
+    const storedHistory = localStorage.getItem('searchHistory');
+    if (storedHistory) {
+      setSearchHistory(JSON.parse(storedHistory));
+    }
+  }, []);
+
+  // Save search history to local storage
+  const addToSearchHistory = (term: string) => {
+    if (!term.trim()) return;
+    
+    setSearchHistory(prevHistory => {
+      const newHistory = [
+        term, 
+        ...prevHistory.filter(item => item !== term)
+      ].slice(0, 10); // Keep only the latest 10 searches
+      
+      localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+      return newHistory;
+    });
+  };
+
+  // Focus input when search opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
       setTimeout(() => {
@@ -46,6 +73,7 @@ const LogSearch: React.FC<LogSearchProps> = ({
     }
   }, [isOpen]);
 
+  // Close search when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -62,6 +90,13 @@ const LogSearch: React.FC<LogSearchProps> = ({
     };
   }, [isOpen, onClose]);
 
+  // Handle search
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    addToSearchHistory(term);
+  };
+
+  // Filter logs based on search term
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setResults([]);
@@ -83,8 +118,27 @@ const LogSearch: React.FC<LogSearchProps> = ({
     setResults(filtered);
   }, [searchTerm, logs]);
 
+  // Filter results by tab
+  const filteredResults = useMemo(() => {
+    if (activeTab === 'all') return results;
+    
+    const now = new Date();
+    
+    switch(activeTab) {
+      case 'today':
+        return results.filter(log => isSameDay(new Date(log.timestamp), now));
+      case 'yesterday':
+        return results.filter(log => isSameDay(new Date(log.timestamp), subDays(now, 1)));
+      case 'week':
+        const weekAgo = subDays(now, 7);
+        return results.filter(log => new Date(log.timestamp) >= weekAgo);
+      default:
+        return results;
+    }
+  }, [results, activeTab]);
+
   // Generate insights from search results
-  const searchInsights = React.useMemo(() => {
+  const searchInsights = useMemo(() => {
     if (!results.length) return null;
 
     // Categories distribution
@@ -118,6 +172,17 @@ const LogSearch: React.FC<LogSearchProps> = ({
     const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
     const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
     
+    // Time distribution
+    const dateGroups = results.reduce((acc, log) => {
+      const dateStr = format(new Date(log.timestamp), 'yyyy-MM-dd');
+      acc[dateStr] = (acc[dateStr] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const timeSeriesData = Object.entries(dateGroups)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    
     return {
       totalResults: results.length,
       categories: categoryData,
@@ -125,7 +190,8 @@ const LogSearch: React.FC<LogSearchProps> = ({
       locations,
       activityTypes,
       startDate,
-      endDate
+      endDate,
+      timeSeriesData
     };
   }, [results]);
 
@@ -168,38 +234,92 @@ const LogSearch: React.FC<LogSearchProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch(searchTerm);
+                  }
+                }}
                 placeholder="Search logs by ID, location, activity..."
                 className="flex-1 bg-transparent outline-none text-foreground"
               />
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => handleSearch(searchTerm)}
+                className="mr-1"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
               <button
                 onClick={onClose}
-                className="ml-2 p-1 rounded-full hover:bg-secondary transition-colors"
+                className="ml-1 p-1 rounded-full hover:bg-secondary transition-colors"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
+            {/* Search history */}
+            {searchTerm === '' && searchHistory.length > 0 && (
+              <div className="border-b p-2">
+                <div className="text-xs text-muted-foreground mb-2 px-2">Recent searches</div>
+                <div className="flex flex-wrap gap-2 px-2">
+                  {searchHistory.map((term, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-secondary/50"
+                      onClick={() => setSearchTerm(term)}
+                    >
+                      <Clock className="mr-1 h-3 w-3" />
+                      {term}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Search View Toggle */}
             {results.length > 0 && (
-              <div className="flex items-center justify-between border-b px-4 py-2">
-                <div className="text-sm font-medium">
-                  {results.length} results found
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant={viewMode === 'list' ? "default" : "outline"} 
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                  >
-                    List View
-                  </Button>
-                  <Button 
-                    variant={viewMode === 'story' ? "default" : "outline"} 
-                    size="sm"
-                    onClick={() => setViewMode('story')}
-                  >
-                    Story View
-                  </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b px-4 py-2 gap-2">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+                  <TabsList className="w-full sm:w-auto">
+                    <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                    <TabsTrigger value="today" className="text-xs">Today</TabsTrigger>
+                    <TabsTrigger value="yesterday" className="text-xs">Yesterday</TabsTrigger>
+                    <TabsTrigger value="week" className="text-xs">This Week</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium mr-2">
+                    {filteredResults.length} results
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant={viewMode === 'list' ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="h-8 text-xs"
+                    >
+                      List
+                    </Button>
+                    <Button 
+                      variant={viewMode === 'story' ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setViewMode('story')}
+                      className="h-8 text-xs"
+                    >
+                      Story
+                    </Button>
+                    <Button 
+                      variant={viewMode === 'analytics' ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setViewMode('analytics')}
+                      className="h-8 text-xs"
+                    >
+                      Analytics
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -211,7 +331,7 @@ const LogSearch: React.FC<LogSearchProps> = ({
                 </div>
               ) : viewMode === 'list' ? (
                 <AnimatePresence>
-                  {results.map((log, index) => (
+                  {filteredResults.map((log, index) => (
                     <motion.div
                       key={log.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -252,7 +372,7 @@ const LogSearch: React.FC<LogSearchProps> = ({
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              ) : (
+              ) : viewMode === 'story' ? (
                 <AnimatePresence>
                   {searchInsights && (
                     <motion.div
@@ -312,7 +432,7 @@ const LogSearch: React.FC<LogSearchProps> = ({
                       <div className="mt-6">
                         <h3 className="text-lg font-medium mb-4">Highlighted Entries</h3>
                         <div className="space-y-4">
-                          {results.slice(0, 5).map((log, index) => (
+                          {filteredResults.slice(0, 5).map((log, index) => (
                             <SearchStoryCard 
                               key={log.id} 
                               log={log} 
@@ -324,17 +444,118 @@ const LogSearch: React.FC<LogSearchProps> = ({
                             />
                           ))}
                           
-                          {results.length > 5 && (
+                          {filteredResults.length > 5 && (
                             <Button 
                               variant="link" 
                               className="w-full mt-2"
                               onClick={() => setViewMode('list')}
                             >
-                              View all {results.length} results <ChevronRight className="w-4 h-4 ml-1" />
+                              View all {filteredResults.length} results <ChevronRight className="w-4 h-4 ml-1" />
                             </Button>
                           )}
                         </div>
                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              ) : (
+                <AnimatePresence>
+                  {searchInsights && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="p-4"
+                    >
+                      <Card className="mb-4">
+                        <CardContent className="p-4">
+                          <h3 className="text-lg font-medium mb-4 flex items-center">
+                            <TrendingUp className="w-5 h-5 mr-2" />
+                            Activity Trends
+                          </h3>
+                          
+                          {searchInsights.timeSeriesData.length > 1 ? (
+                            <div className="h-[200px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={searchInsights.timeSeriesData}>
+                                  <XAxis 
+                                    dataKey="date" 
+                                    tick={{ fontSize: 12 }}
+                                    tickFormatter={(date) => format(new Date(date), 'MM/dd')}
+                                  />
+                                  <YAxis tick={{ fontSize: 12 }} />
+                                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                                  <Tooltip
+                                    formatter={(value: number) => [`${value} activities`, 'Count']}
+                                    labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
+                                  />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="count"
+                                    stroke="#4f46e5"
+                                    strokeWidth={2}
+                                    dot={{ r: 4, strokeWidth: 2 }}
+                                    activeDot={{ r: 6 }}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          ) : (
+                            <div className="text-center p-4 text-muted-foreground">
+                              Not enough time data to generate a trend chart.
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <h4 className="text-sm font-medium mb-3">Activity Breakdown</h4>
+                            <div className="space-y-2">
+                              {searchInsights.categories.slice(0, 5).map((category, idx) => (
+                                <div key={idx} className="flex items-center justify-between">
+                                  <span className="text-sm truncate max-w-[70%]">{category.name}</span>
+                                  <div className="flex items-center">
+                                    <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden mr-2">
+                                      <div 
+                                        className="h-full bg-primary rounded-full" 
+                                        style={{ width: `${(category.value / searchInsights.totalResults) * 100}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs font-medium w-8 text-right">{category.value}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardContent className="p-4">
+                            <h4 className="text-sm font-medium mb-3">Top Locations</h4>
+                            <div className="space-y-2">
+                              {searchInsights.locations.slice(0, 5).map((location, idx) => {
+                                const count = filteredResults.filter(log => log.location === location).length;
+                                return (
+                                  <div key={idx} className="flex items-center justify-between">
+                                    <span className="text-sm truncate max-w-[70%]">{location}</span>
+                                    <Badge variant="outline">{count}</Badge>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        className="w-full mt-2"
+                        onClick={() => setViewMode('list')}
+                      >
+                        View All Results
+                      </Button>
                     </motion.div>
                   )}
                 </AnimatePresence>
