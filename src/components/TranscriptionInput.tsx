@@ -78,10 +78,10 @@ const TranscriptionInput = forwardRef<
       // Then, save all logs with a reference to the transcription
       const transcriptionId = transcriptionData.id;
       
-      // Insert logs as JSON
+      // Insert logs as JSON - fix the type error by explicitly casting each log as Json
       const logInserts = logs.map(log => ({
         transcription_id: transcriptionId,
-        log_data: log
+        log_data: log as any // Cast to any/Json to satisfy the database type
       }));
       
       const { error: logsError } = await supabase
@@ -93,7 +93,7 @@ const TranscriptionInput = forwardRef<
       toast({
         title: "Transcription saved",
         description: "Your transcription and logs have been saved to the database.",
-        variant: "success",
+        variant: "default", // Changed from "success" to "default"
       });
       
     } catch (error) {

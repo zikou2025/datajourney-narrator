@@ -55,7 +55,9 @@ const Index = () => {
           if (logsData && logsData.length > 0) {
             // Process logs from the database
             const processedLogs: LogEntry[] = logsData.map((logRow) => {
-              return logRow.log_data as LogEntry;
+              // Fix the type error by adding proper type casting
+              const logData = logRow.log_data as unknown;
+              return logData as LogEntry;
             });
 
             setLogs(processedLogs);
