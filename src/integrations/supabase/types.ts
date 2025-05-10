@@ -9,7 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      transcription_logs: {
+        Row: {
+          created_at: string
+          id: string
+          log_data: Json
+          transcription_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log_data: Json
+          transcription_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log_data?: Json
+          transcription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcription_logs_transcription_id_fkey"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transcriptions: {
+        Row: {
+          created_at: string
+          full_text: string
+          id: string
+          summary: string | null
+          title: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          full_text: string
+          id?: string
+          summary?: string | null
+          title: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          full_text?: string
+          id?: string
+          summary?: string | null
+          title?: string
+          video_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,13 +1,22 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Search, LayoutDashboard, Map, ListFilter, LineChart, BookOpen, MessageSquare, History } from 'lucide-react';
+import {
+  BarChart3,
+  Map,
+  List,
+  Search,
+  TimerReset,
+  LineChart,
+  BookOpen,
+  Brain,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LogHeaderProps {
-  activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'qa';
-  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'qa') => void;
-  setSearchOpen: (open: boolean) => void;
+  activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa';
+  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa') => void;
+  setSearchOpen: (isOpen: boolean) => void;
 }
 
 const LogHeader: React.FC<LogHeaderProps> = ({
@@ -15,111 +24,98 @@ const LogHeader: React.FC<LogHeaderProps> = ({
   setActiveView,
   setSearchOpen,
 }) => {
+  const NavButton = ({
+    view,
+    icon,
+    label,
+  }: {
+    view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa';
+    icon: React.ReactNode;
+    label: string;
+  }) => (
+    <Button
+      variant={activeView === view ? "default" : "ghost"}
+      className={cn(
+        "h-9 gap-1.5",
+        activeView === view ? "bg-primary" : "hover:bg-muted"
+      )}
+      onClick={() => setActiveView(view)}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </Button>
+  );
+
   return (
-    <header className="border-b sticky top-0 z-30 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="border-b bg-background sticky top-0 z-10">
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 hidden md:flex">
           <a className="mr-6 flex items-center space-x-2" href="/">
-            <BookOpen className="h-6 w-6" />
-            <span className="hidden font-bold sm:inline-block">
-              DataJourney Narrator
-            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+            >
+              <path d="M10 20.5A7.5 7.5 0 1 0 10 5.5V20.5Z"></path>
+              <path d="M14 5.5a7.5 7.5 0 1 1 0 15V5.5Z"></path>
+              <path d="M7.5 10H12.5"></path>
+              <path d="M11.5 14H16.5"></path>
+            </svg>
+            <span className="font-bold">ActivityLog</span>
           </a>
-          <nav className="flex items-center gap-6 text-sm">
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "dashboard" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("dashboard")}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "map" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("map")}
-            >
-              <Map className="h-4 w-4" />
-              Map
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "list" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("list")}
-            >
-              <ListFilter className="h-4 w-4" />
-              List
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "timeline" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("timeline")}
-            >
-              <History className="h-4 w-4" />
-              Timeline
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "timeseries" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("timeseries")}
-            >
-              <LineChart className="h-4 w-4" />
-              Time Series
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "story" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("story")}
-            >
-              <BookOpen className="h-4 w-4" />
-              Story
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "h-8 gap-1",
-                activeView === "qa" && "bg-accent text-accent-foreground"
-              )}
-              onClick={() => setActiveView("qa")}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Q&A
-            </Button>
-          </nav>
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-full justify-start text-sm text-muted-foreground md:w-[240px]"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="mr-2 h-4 w-4" />
-              Search logs...
-              <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                ⌘K
-              </kbd>
-            </Button>
-          </div>
+        <div className="flex items-center space-x-1.5">
+          <NavButton
+            view="dashboard"
+            icon={<BarChart3 className="h-4 w-4" />}
+            label="Dashboard"
+          />
+          <NavButton 
+            view="map" 
+            icon={<Map className="h-4 w-4" />}
+            label="Map" 
+          />
+          <NavButton
+            view="list"
+            icon={<List className="h-4 w-4" />}
+            label="List"
+          />
+          <NavButton
+            view="timeline"
+            icon={<TimerReset className="h-4 w-4" />}
+            label="Timeline"
+          />
+          <NavButton
+            view="timeseries"
+            icon={<LineChart className="h-4 w-4" />}
+            label="TimeSeries"
+          />
+          <NavButton
+            view="story"
+            icon={<BookOpen className="h-4 w-4" />}
+            label="Story"
+          />
+          <NavButton
+            view="qa"
+            icon={<Brain className="h-4 w-4" />}
+            label="Q&A"
+          />
+        </div>
+        <div className="ml-auto flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+            <span className="sr-only">Search</span>
+          </Button>
         </div>
       </div>
     </header>

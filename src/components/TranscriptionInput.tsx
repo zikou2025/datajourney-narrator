@@ -3,7 +3,7 @@ import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CardContent, Card } from "@/components/ui/card";
-import { Clock, FileText, Loader2, Sparkles, Calendar } from 'lucide-react';
+import { Clock, FileText, Loader2, Sparkles, Calendar, Database } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogEntry } from "@/lib/types";
@@ -34,6 +34,7 @@ const TranscriptionInput = forwardRef<
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDate, setVideoDate] = useState<Date | undefined>(new Date());
   const [videoLocation, setVideoLocation] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   // Expose loadTranscription method to parent components
@@ -51,6 +52,61 @@ const TranscriptionInput = forwardRef<
       });
     }
   }));
+
+  // Save transcription to database
+  const saveTranscriptionToDatabase = async (logs: LogEntry[], title: string, fullText: string, summary?: string) => {
+    setIsSaving(true);
+    try {
+      // First, insert the transcription
+      const { data: transcriptionData, error: transcriptionError } = await supabase
+        .from('transcriptions')
+        .insert([{
+          title: title,
+          video_id: logs.find(log => log.episodeId)?.episodeId?.split('-')[1] || null,
+          full_text: fullText,
+          summary: summary || null
+        }])
+        .select('id')
+        .single();
+
+      if (transcriptionError) throw transcriptionError;
+      
+      if (!transcriptionData?.id) {
+        throw new Error("Failed to get transcription ID after insertion");
+      }
+      
+      // Then, save all logs with a reference to the transcription
+      const transcriptionId = transcriptionData.id;
+      
+      // Insert logs as JSON
+      const logInserts = logs.map(log => ({
+        transcription_id: transcriptionId,
+        log_data: log
+      }));
+      
+      const { error: logsError } = await supabase
+        .from('transcription_logs')
+        .insert(logInserts);
+        
+      if (logsError) throw logsError;
+      
+      toast({
+        title: "Transcription saved",
+        description: "Your transcription and logs have been saved to the database.",
+        variant: "success",
+      });
+      
+    } catch (error) {
+      console.error("Error saving transcription to database:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save transcription to the database. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const processTranscription = async () => {
     if (!transcription.trim()) {
@@ -112,6 +168,14 @@ const TranscriptionInput = forwardRef<
           episodeId: videoTitle ? `${videoTitle.replace(/\s+/g, '-').toLowerCase()}-${format(baseDate, 'yyyyMMdd')}` : undefined
         };
       }) as LogEntry[];
+
+      // Save transcription and logs to database
+      await saveTranscriptionToDatabase(
+        processedLogs,
+        videoTitle || 'Untitled Video',
+        transcription,
+        data.summary
+      );
 
       // Pass both the processed logs and the video title to the handler
       onLogsGenerated(processedLogs, videoTitle || 'Untitled Video');
@@ -211,12 +275,12 @@ const TranscriptionInput = forwardRef<
               <Tooltip>
                 <TooltipTrigger>
                   <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>Time-based analysis enabled</span>
+                    <Database className="w-4 h-4 mr-1" />
+                    <span>Transcriptions are saved to database</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Logs will be processed with time data for temporal analysis</p>
+                  <p>Your transcriptions and logs are automatically stored</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -224,13 +288,13 @@ const TranscriptionInput = forwardRef<
           
           <Button 
             onClick={processTranscription} 
-            disabled={isProcessing || !transcription.trim()}
+            disabled={isProcessing || !transcription.trim() || isSaving}
             className="relative group"
           >
-            {isProcessing ? (
+            {isProcessing || isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing with Gemini AI...
+                {isProcessing ? "Processing with Gemini AI..." : "Saving to database..."}
               </>
             ) : (
               <>
