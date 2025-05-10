@@ -7,8 +7,8 @@ import {
 } from 'recharts';
 import { LogEntry, TimeSeriesData } from '@/lib/types';
 import { 
-  BarChart3, CalendarDays, Clock, Filter, LineChart as LineChartIcon, 
-  List, PieChart, RefreshCw, SlidersHorizontal, CalendarIcon, TrendingUp
+  BarChart3, CalendarIcon, Clock, Filter, LineChart as LineChartIcon, 
+  List, PieChart, RefreshCw, SlidersHorizontal, TrendingUp
 } from 'lucide-react';
 import { format, subDays, differenceInDays, parseISO, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -534,7 +534,7 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
                   <div>
                     <h4 className="font-medium truncate max-w-xs">{item.title}</h4>
                     <div className="text-xs text-muted-foreground flex items-center">
-                      <Calendar className="w-3 h-3 mr-1" />
+                      <CalendarIcon className="w-3 h-3 mr-1" />
                       {item.formattedDate}
                     </div>
                   </div>
