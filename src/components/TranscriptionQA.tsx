@@ -7,9 +7,9 @@ import { LogEntry } from "@/lib/types";
 import TranscriptionInput from './TranscriptionInput';
 import { 
   Send, Loader2, Sparkles, MessageSquare, Lightbulb, 
-  Settings2, FileText, ArrowDownToLine, Clock, AlertCircle, 
-  RefreshCcw, Database, Brain, PanelLeft, ChevronRight, ChevronDown,
-  ChevronUp, CheckCircle2, XCircle, HelpCircle, Filter, Youtube
+  Settings2, FileText, Clock, AlertCircle, 
+  RefreshCcw, Database, Brain, ChevronDown,
+  ChevronUp, HelpCircle, Filter
 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,9 +19,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import QAVisualization from './QAVisualization';
 
 interface TranscriptionQAProps {
   logs: LogEntry[];
@@ -73,9 +73,8 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
   const [currentLevel, setCurrentLevel] = useState<string | null>(null);
   const [expandedLevel, setExpandedLevel] = useState<string | null>(null);
   const [progressPercent, setProgressPercent] = useState(0);
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [isExtractingTranscription, setIsExtractingTranscription] = useState(false);
   const [extractedTranscription, setExtractedTranscription] = useState<ExtractedTranscriptionData | null>(null);
+  const [showVisualization, setShowVisualization] = useState(false);
   const transcriptionInputRef = useRef<any>(null);
   const { toast } = useToast();
 
@@ -307,6 +306,9 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
         if (data.questionsAndAnswers.length > 0) {
           setExpandedLevel(data.questionsAndAnswers[0].level);
         }
+        
+        // Show visualization
+        setShowVisualization(true);
       } else {
         throw new Error("Failed to generate questions and answers");
       }
@@ -330,71 +332,25 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
     }
   };
 
-  const extractYouTubeTranscription = async () => {
-    if (!youtubeUrl || isExtractingTranscription) return;
-    
-    // Basic validation
-    if (!youtubeUrl.includes('youtube.com/') && !youtubeUrl.includes('youtu.be/')) {
-      toast({
-        title: "Invalid URL",
-        description: "Please enter a valid YouTube URL",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleLogsGenerated = (newLogs: LogEntry[], newTitle?: string) => {
+    const newTranscriptionGroup = {
+      title: newTitle || 'Untitled Transcription',
+      date: new Date(),
+      logs: newLogs,
+    };
 
-    setIsExtractingTranscription(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('extract-youtube-transcription', {
-        body: { youtubeUrl }
-      });
+    // Update the transcription groups state
+    // setTranscriptionGroups(prevGroups => [newTranscriptionGroup, ...prevGroups]);
 
-      if (error) {
-        throw error;
-      }
-
-      if (data?.error) {
-        throw new Error(data.message || data.error);
-      }
-
-      if (data?.transcription) {
-        // Set the extracted transcription data to be used by the TranscriptionInput component
-        setExtractedTranscription({
-          transcription: data.transcription,
-          videoTitle: data.videoTitle || 'YouTube Video',
-          videoId: data.videoId,
-          summary: data.summary
-        });
-
-        toast({
-          title: "Transcription Extracted",
-          description: `Successfully extracted transcription from ${data.videoTitle || "YouTube video"}`,
-        });
-
-        // Reset the URL input
-        setYoutubeUrl('');
-        
-        // Switch to the input tab
-        setActiveTab('chat');
-      } else {
-        throw new Error("No transcription data returned");
-      }
-    } catch (error: any) {
-      console.error("Error extracting transcription:", error);
-      
-      toast({
-        title: "Error",
-        description: error.message || "Failed to extract transcription. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExtractingTranscription(false);
-    }
+    toast({
+      title: "Logs Generated",
+      description: "Successfully generated logs from the transcription input.",
+    });
   };
 
-  const handleLogsGenerated = (newLogs: LogEntry[], newTitle?: string) => {
-    // ... keep existing code (logs generation handler if any)
+  // Toggle visualization view
+  const toggleVisualization = () => {
+    setShowVisualization(prev => !prev);
   };
 
   return (
@@ -460,40 +416,6 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
             </div>
           )}
         </div>
-
-        {/* YouTube Transcription Extractor */}
-        <Card className="mb-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Youtube className="h-5 w-5 text-red-500" />
-              Extract YouTube Transcription
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Enter a YouTube video URL to extract its transcription using Gemini AI
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pb-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="YouTube video URL (e.g., https://www.youtube.com/watch?v=...)"
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                className="flex-1"
-              />
-              <Button 
-                onClick={extractYouTubeTranscription}
-                disabled={isExtractingTranscription || !youtubeUrl}
-              >
-                {isExtractingTranscription ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowDownToLine className="h-4 w-4 mr-2" />
-                )}
-                {isExtractingTranscription ? "Extracting..." : "Extract"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         {!selectedTranscriptionId && (
           <div className="bg-muted/30 rounded-md p-6 flex flex-col items-center justify-center text-center">
@@ -578,6 +500,25 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Visualization Toggle */}
+                  <div className="flex justify-end mb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleVisualization}
+                      className="flex items-center gap-1 text-sm"
+                    >
+                      {showVisualization ? "Hide" : "Show"} Visualization
+                    </Button>
+                  </div>
+
+                  {/* Animated Visualization */}
+                  {showVisualization && (
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 mb-6 shadow-inner">
+                      <QAVisualization questions={generatedQA} />
+                    </div>
+                  )}
+                  
                   {/* Filter controls */}
                   <div className="flex items-center gap-4 bg-muted/20 p-3 rounded-lg">
                     <Filter className="h-4 w-4 text-muted-foreground" />
@@ -927,82 +868,4 @@ const TranscriptionQA: React.FC<TranscriptionQAProps> = ({ logs, videoTitle }) =
                   </p>
                   <Alert className="mt-3 bg-blue-50 text-blue-800 border-blue-200">
                     <AlertTitle className="text-sm">API Usage Information</AlertTitle>
-                    <AlertDescription className="text-xs">
-                      This feature uses the Gemini AI API, which has rate limits. If you encounter a rate limit error, 
-                      wait a few moments before trying again. For high-volume usage, consider upgrading your API plan.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-                
-                {messages.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Conversation History</h3>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        setMessages([]);
-                        toast({
-                          title: "Conversation cleared",
-                          description: "Your conversation history has been reset."
-                        });
-                      }}
-                    >
-                      Clear Conversation History
-                    </Button>
-                  </div>
-                )}
-                
-                {generatedQA.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Generated Q&A</h3>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        setGeneratedQA([]);
-                        toast({
-                          title: "Q&A Cleared",
-                          description: "Generated questions and answers have been cleared."
-                        });
-                      }}
-                    >
-                      Clear Generated Q&A
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
-      </CardContent>
-      <CardFooter className="text-xs text-muted-foreground flex justify-between items-center">
-        <div>
-          Powered by Gemini AI • Answers are generated based on your transcription data
-        </div>
-        {selectedTranscriptionId && (
-          <div className="flex items-center gap-2">
-            {deepDiveEnabled && (
-              <div className="flex items-center">
-                <Lightbulb className="h-3 w-3 mr-1 text-yellow-500" />
-                <span className="text-yellow-500">Deep Dive</span>
-              </div>
-            )}
-            {generatedQA.length > 0 && (
-              <div className="flex items-center">
-                <Database className="h-3 w-3 mr-1 text-blue-500" />
-                <span className="text-blue-500">
-                  {generatedQA.reduce(
-                    (total, level) => total + level.questions.length, 0
-                  )} Questions
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </CardFooter>
-    </Card>
-  );
-};
-
-export default TranscriptionQA;
+                    <AlertDescription className="
