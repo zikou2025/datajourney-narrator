@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import LogHeader from "@/components/LogHeader";
 import { LogEntry } from '@/lib/types';
 import LogMap from "@/components/LogMap";
@@ -17,7 +18,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Book, BarChart, Loader2 } from "lucide-react";
+import { Book, BarChart, Loader2, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
@@ -268,6 +269,22 @@ const Index = () => {
       )}
       
       <div className="container mx-auto py-6 px-4">
+        {/* News Landing Link */}
+        <Card className="mb-6 bg-primary/5 hover:bg-primary/10 transition-colors">
+          <CardContent className="p-4 flex justify-between items-center">
+            <div>
+              <h3 className="font-medium text-lg">Visit Our News Portal</h3>
+              <p className="text-muted-foreground">Get the latest construction industry news, events and updates</p>
+            </div>
+            <Link to="/news">
+              <Button>
+                View News
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+        
         <TranscriptionInput 
           onLogsGenerated={handleNewLogs} 
         />

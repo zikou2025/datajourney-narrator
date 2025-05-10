@@ -1,4 +1,3 @@
-
 import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,12 +145,12 @@ const TranscriptionInput = forwardRef<
         throw new Error('No logs were generated from the transcription');
       }
 
-      // Create a timestamp base for the logs if they don't have individual timestamps
+      // Create a timestamp base for the logs using the user-provided date
       const baseDate = videoDate || new Date();
       
       // Add IDs and timestamps to the logs if they don't have them
       const processedLogs = data.logs.map((log: Partial<LogEntry>, index: number) => {
-        // If no timestamp is provided, create sequential timestamps
+        // If no timestamp is provided, create sequential timestamps based on the user-selected date
         const timestamp = log.timestamp || 
           new Date(baseDate.getTime() + (index * 10 * 60 * 1000)).toISOString(); // Add 10 minutes per log
         
