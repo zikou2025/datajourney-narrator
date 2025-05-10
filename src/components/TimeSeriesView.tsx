@@ -854,7 +854,7 @@ const TimeSeriesView: React.FC<TimeSeriesViewProps> = ({ logs, isLoading = false
                   Metrics
                 </TabsTrigger>
                 <TabsTrigger value="patterns" className="px-4">
-                  <CalendarDays className="w-4 h-4 mr-2" />
+                  <CalendarIcon className="w-4 h-4 mr-2" />
                   Patterns
                 </TabsTrigger>
                 <TabsTrigger value="cross" className="px-4">
