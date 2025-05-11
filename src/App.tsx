@@ -11,6 +11,7 @@ import StorytellingView from "./components/StorytellingView";
 import TranscriptionQA from "./components/TranscriptionQA";
 import NewsLanding from "./pages/NewsLanding";
 import NewsDetail from "./pages/NewsDetail";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/timeseries" element={<TimeSeriesView logs={[]} />} />
           <Route path="/story" element={<StorytellingView logs={[]} />} />
           <Route path="/transcription" element={<TranscriptionQA logs={[]} />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

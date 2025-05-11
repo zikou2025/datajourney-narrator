@@ -17,6 +17,7 @@ import HeadlinesGrid from '@/components/news/HeadlinesGrid';
 import CategoryNews from '@/components/news/CategoryNews';
 import EventsSidebar from '@/components/news/EventsSidebar';
 import { headlines, upcomingEvents, categories } from '@/lib/newsData';
+import NewsNavbar from '@/components/news/NewsNavbar';
 
 const NewsLanding: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -30,8 +31,16 @@ const NewsLanding: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
   
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+  
   return (
     <div className="min-h-screen bg-background">
+      {/* Navbar - Ground News style */}
+      <NewsNavbar />
+      
       {/* Hero Section */}
       <NewsHero />
 
@@ -57,6 +66,15 @@ const NewsLanding: React.FC = () => {
             
             {/* Category Tabs */}
             <CategoryNews headlines={headlines} />
+            
+            {/* Admin Access Button */}
+            <div className="mt-8 text-center">
+              <Button variant="outline" className="gap-2" asChild>
+                <Link to="/admin">
+                  Access Admin Dashboard
+                </Link>
+              </Button>
+            </div>
           </div>
           
           {/* Sidebar */}
