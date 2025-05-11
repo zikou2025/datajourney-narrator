@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LogEntry } from '@/lib/types';
 import { motion } from 'framer-motion';
@@ -233,7 +234,7 @@ const Index = () => {
                 <TabsTrigger value="locations">Locations</TabsTrigger>
               </TabsList>
             
-              {/* Content must be inside Tabs container */}
+              {/* TabsContent components - moved outside of TabsList */}
               {/* Featured Tab Content */}
               <TabsContent value="featured" className="mt-6 space-y-8">
                 {featuredArticle && (
