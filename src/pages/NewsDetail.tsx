@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -11,6 +10,7 @@ import { format } from 'date-fns';
 import { Calendar, Clock, User, Share, Bookmark, ChevronLeft, MapPin, ArrowLeft, MessageSquare, Newspaper, TrendingUp } from 'lucide-react';
 import { headlines } from '@/lib/newsData';
 import { Link } from 'react-router-dom';
+import { Input } from "@/components/ui/input";
 
 const NewsDetail = () => {
   const { id } = useParams<{ id: string }>();

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface IndexHeaderProps {
+export interface IndexHeaderProps {
   activeTab: 'featured' | 'latest' | 'trending' | 'locations';
   setActiveTab: (tab: 'featured' | 'latest' | 'trending' | 'locations') => void;
   setSearchOpen: (open: boolean) => void;

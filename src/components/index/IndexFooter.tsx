@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 
-interface IndexFooterProps {
+export interface IndexFooterProps {
   categories: {[key: string]: number};
 }
 
@@ -22,7 +22,7 @@ const IndexFooter: React.FC<IndexFooterProps> = ({ categories }) => {
           <div>
             <h3 className="font-bold text-lg mb-4">Categories</h3>
             <ul className="space-y-2 text-sm">
-              {Object.keys(categories).slice(0, 5).map(category => (
+              {categories && Object.keys(categories).slice(0, 5).map(category => (
                 <li key={category}>
                   <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                     {category}
