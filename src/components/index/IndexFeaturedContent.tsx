@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogEntry } from '@/lib/types';
 import { Calendar, ChevronRight, FileText, CalendarDays, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface IndexFeaturedContentProps {
   featuredArticle: LogEntry | null;
@@ -23,6 +24,8 @@ const IndexFeaturedContent: React.FC<IndexFeaturedContentProps> = ({
   formatNewsDate,
   getExcerpt
 }) => {
+  const [expandedArticle, setExpandedArticle] = React.useState<string | null>(null);
+
   return (
     <div className="space-y-8">
       {featuredArticle && (
@@ -50,10 +53,36 @@ const IndexFeaturedContent: React.FC<IndexFeaturedContentProps> = ({
                   <h2 className="text-2xl font-bold mb-3">
                     {`${featuredArticle.activityType} Progress at ${featuredArticle.location}`}
                   </h2>
-                  <p className="text-muted-foreground mb-4">
-                    {featuredArticle.notes}
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  
+                  {expandedArticle === featuredArticle.id ? (
+                    <>
+                      <p className="text-muted-foreground mb-4">
+                        {featuredArticle.notes}
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setExpandedArticle(null)}
+                      >
+                        Show Less
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-muted-foreground mb-4">
+                        {getExcerpt(featuredArticle.notes, 200)}
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setExpandedArticle(featuredArticle.id)}
+                      >
+                        Read More
+                      </Button>
+                    </>
+                  )}
+                  
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-4">
                     <MapPin className="h-3 w-3" />
                     <span>{featuredArticle.location}</span>
                   </div>
@@ -120,9 +149,15 @@ const IndexFeaturedContent: React.FC<IndexFeaturedContentProps> = ({
       
       {/* Categories Section */}
       <section>
-        <h2 className="text-2xl font-bold mb-6">Categories</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Categories</h2>
+          <Button variant="ghost" size="sm" className="gap-1">
+            View All
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {Object.entries(categories).slice(0, 6).map(([category, count], i) => (
+          {Object.entries(categories || {}).slice(0, 6).map(([category, count], i) => (
             <motion.div 
               key={category}
               initial={{ opacity: 0, y: 20 }}
@@ -136,7 +171,12 @@ const IndexFeaturedContent: React.FC<IndexFeaturedContentProps> = ({
                     {count} {count === 1 ? 'update' : 'updates'}
                   </p>
                   <div className="flex justify-end">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      as={Link}
+                      to={`/?category=${category}`}
+                    >
                       View All
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>

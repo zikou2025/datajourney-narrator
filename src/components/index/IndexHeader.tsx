@@ -12,7 +12,7 @@ export interface IndexHeaderProps {
 
 const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setSearchOpen }) => {
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="border-b bg-black text-white">
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -27,26 +27,28 @@ const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setS
               variant="outline" 
               size="sm"
               onClick={() => setSearchOpen(true)}
+              className="text-white border-white/30 hover:bg-white/10"
             >
               Search Archives
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/legacy-news">News Archive</Link>
+            <Button variant="outline" size="sm" asChild className="text-white border-white/30 hover:bg-white/10">
+              <Link to="/admin">Admin Access</Link>
             </Button>
-            <Button>Subscribe</Button>
+            <Button className="bg-primary hover:bg-primary/90">Subscribe</Button>
           </div>
         </div>
         
-        <div className="mt-6 border-t pt-4">
+        <div className="mt-6 border-t border-white/20 pt-4">
           <Tabs 
             value={activeTab} 
             onValueChange={(v) => setActiveTab(v as any)}
+            className="text-white"
           >
-            <TabsList className="grid grid-cols-4 w-full max-w-lg">
-              <TabsTrigger value="featured">Featured</TabsTrigger>
-              <TabsTrigger value="latest">Latest</TabsTrigger>
-              <TabsTrigger value="trending">Trending</TabsTrigger>
-              <TabsTrigger value="locations">Locations</TabsTrigger>
+            <TabsList className="grid grid-cols-4 w-full max-w-lg bg-black/30">
+              <TabsTrigger value="featured" className="data-[state=active]:bg-white/20">Featured</TabsTrigger>
+              <TabsTrigger value="latest" className="data-[state=active]:bg-white/20">Latest</TabsTrigger>
+              <TabsTrigger value="trending" className="data-[state=active]:bg-white/20">Trending</TabsTrigger>
+              <TabsTrigger value="locations" className="data-[state=active]:bg-white/20">Locations</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

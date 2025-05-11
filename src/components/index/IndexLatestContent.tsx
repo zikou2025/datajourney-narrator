@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +18,17 @@ const IndexLatestContent: React.FC<IndexLatestContentProps> = ({
   formatNewsDate,
   getExcerpt
 }) => {
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold mb-6">Latest Updates</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Latest Updates</h2>
+        <Button variant="ghost" size="sm" className="gap-1">
+          View All
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {getRecentLogs(7).map((log, i) => (
           <motion.div 
@@ -41,9 +49,15 @@ const IndexLatestContent: React.FC<IndexLatestContentProps> = ({
                 <CardTitle className="leading-tight">{log.activityType}</CardTitle>
               </CardHeader>
               <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground mb-4">
-                  {getExcerpt(log.notes)}
-                </p>
+                {expandedCard === log.id ? (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {log.notes}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {getExcerpt(log.notes)}
+                  </p>
+                )}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" />
                   <span>{log.location}</span>
@@ -59,8 +73,12 @@ const IndexLatestContent: React.FC<IndexLatestContentProps> = ({
                   }>
                     {log.status}
                   </Badge>
-                  <Button variant="ghost" size="sm">
-                    Read More
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setExpandedCard(expandedCard === log.id ? null : log.id)}
+                  >
+                    {expandedCard === log.id ? "Show Less" : "Read More"}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>

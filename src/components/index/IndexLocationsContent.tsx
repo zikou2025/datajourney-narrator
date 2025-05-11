@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +22,24 @@ const IndexLocationsContent: React.FC<IndexLocationsContentProps> = ({
 }) => {
   // Ensure locations is never undefined
   const locationsList = locations || {};
+  const [expandedNotes, setExpandedNotes] = useState<{[key: string]: boolean}>({});
+  
+  const toggleExpanded = (locationId: string) => {
+    setExpandedNotes(prev => ({
+      ...prev,
+      [locationId]: !prev[locationId]
+    }));
+  };
   
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold mb-6">Updates by Location</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Updates by Location</h2>
+        <Button variant="ghost" size="sm" className="gap-1">
+          View All Locations
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
       
       {Object.keys(locationsList).length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -35,6 +49,8 @@ const IndexLocationsContent: React.FC<IndexLocationsContentProps> = ({
               locationLogs.sort((a, b) => 
                 new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
               )[0] : null;
+            
+            const isExpanded = expandedNotes[location] || false;
             
             return (
               <motion.div
@@ -55,7 +71,22 @@ const IndexLocationsContent: React.FC<IndexLocationsContentProps> = ({
                       <div className="space-y-1">
                         <div className="text-sm text-muted-foreground">Latest Update:</div>
                         <div className="font-medium">{latestLog.activityType}</div>
-                        <div className="text-sm">{getExcerpt(latestLog.notes, 100)}</div>
+                        <div className="text-sm">
+                          {isExpanded 
+                            ? latestLog.notes
+                            : getExcerpt(latestLog.notes, 100)
+                          }
+                          {latestLog.notes.length > 100 && (
+                            <Button 
+                              variant="link" 
+                              size="sm" 
+                              onClick={() => toggleExpanded(location)}
+                              className="p-0 h-auto"
+                            >
+                              {isExpanded ? "Show less" : "Read more"}
+                            </Button>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {formatNewsDate(latestLog.timestamp)}
                         </div>

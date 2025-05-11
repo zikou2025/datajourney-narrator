@@ -9,7 +9,6 @@ import NotFound from "./pages/NotFound";
 import TimeSeriesView from "./components/TimeSeriesView";
 import StorytellingView from "./components/StorytellingView";
 import TranscriptionQA from "./components/TranscriptionQA";
-import NewsLanding from "./pages/NewsLanding";
 import NewsDetail from "./pages/NewsDetail";
 import Admin from "./pages/Admin";
 
@@ -23,7 +22,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/legacy-news" element={<NewsLanding />} />
           <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/timeseries" element={<TimeSeriesView logs={[]} />} />
           <Route path="/story" element={<StorytellingView logs={[]} />} />
