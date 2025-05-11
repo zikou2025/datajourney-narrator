@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { LogEntry } from '@/lib/types';
 import { motion } from 'framer-motion';
@@ -461,7 +460,7 @@ const Index = () => {
                       <Card className="overflow-hidden">
                         <div className="bg-gradient-to-r from-primary/10 to-primary/5 h-12 flex items-center px-6">
                           <h3 className="font-medium flex items-center">
-                            <Trending className="h-4 w-4 mr-2 text-primary" />
+                            <TrendingUp className="h-4 w-4 mr-2 text-primary" />
                             Trending #{i+1}
                           </h3>
                         </div>
