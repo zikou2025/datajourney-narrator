@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LogEntry } from '@/lib/types';
 import { motion } from 'framer-motion';
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TranscriptionInput from "@/components/TranscriptionInput";
-import { Calendar, BarChart, Bookmark, ChevronRight, Clock, CalendarDays, Newspaper, MapPin, Users, Trending, TrendingUp, FileText, Loader2 } from 'lucide-react';
+import { Calendar, BarChart, Bookmark, ChevronRight, Clock, CalendarDays, Newspaper, MapPin, Users, TrendingUp, Loader2, FileText } from 'lucide-react';
 import { format, parseISO, subDays } from 'date-fns';
 import LogSearch from "@/components/LogSearch";
 
