@@ -21,7 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/news" element={<NewsLanding />} />
+          <Route path="/legacy-news" element={<NewsLanding />} /> {/* Renamed to legacy-news */}
           <Route path="/timeseries" element={<TimeSeriesView logs={[]} />} />
           <Route path="/story" element={<StorytellingView logs={[]} />} />
           <Route path="/transcription" element={<TranscriptionQA logs={[]} />} />
