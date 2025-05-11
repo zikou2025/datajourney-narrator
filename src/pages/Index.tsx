@@ -23,11 +23,14 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<'featured' | 'latest' | 'trending' | 'locations'>('featured');
   const [searchOpen, setSearchOpen] = useState(false);
   
-  // Process data for the components
-  const logs = mockLogs;
-  const locations = getLocationCounts(logs);
-  const categories = getCategoryCounts(logs);
+  // Process data for the components - ensure we always have valid objects
+  const logs = mockLogs || [];
+  const locations = getLocationCounts(logs) || {};
+  const categories = getCategoryCounts(logs) || {};
   const featuredArticle = getFeaturedArticle(logs);
+
+  console.log("Locations:", locations);
+  console.log("Categories:", categories);
 
   return (
     <div>
