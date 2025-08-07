@@ -174,11 +174,12 @@ const IndexFeaturedContent: React.FC<IndexFeaturedContentProps> = ({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      as={Link}
-                      to={`/?category=${category}`}
+                      asChild
                     >
-                      View All
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      <Link to={`/?category=${category}`}>
+                        View All
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>
