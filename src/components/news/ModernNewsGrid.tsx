@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, ChevronRight } from "lucide-react";
 import { LogEntry } from '@/lib/types';
 import { formatNewsDate, getExcerpt } from '@/lib/newsUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface ModernNewsGridProps {
   articles: LogEntry[];
@@ -11,9 +12,18 @@ interface ModernNewsGridProps {
 }
 
 const ModernNewsGrid: React.FC<ModernNewsGridProps> = ({ articles, onArticleClick }) => {
+  const navigate = useNavigate();
   const featuredArticle = articles[0];
   const secondaryArticles = articles.slice(1, 4);
   const remainingArticles = articles.slice(4);
+
+  const handleArticleClick = (article: LogEntry) => {
+    if (onArticleClick) {
+      onArticleClick(article);
+    } else {
+      navigate(`/news/${article.id}`);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -21,7 +31,7 @@ const ModernNewsGrid: React.FC<ModernNewsGridProps> = ({ articles, onArticleClic
       {featuredArticle && (
         <Card 
           className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300"
-          onClick={() => onArticleClick?.(featuredArticle)}
+          onClick={() => handleArticleClick(featuredArticle)}
         >
           <div className="aspect-[16/9] bg-muted relative">
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -49,7 +59,7 @@ const ModernNewsGrid: React.FC<ModernNewsGridProps> = ({ articles, onArticleClic
             <Card 
               key={article.id}
               className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-300"
-              onClick={() => onArticleClick?.(article)}
+              onClick={() => handleArticleClick(article)}
             >
               <div className="aspect-[16/10] bg-muted" />
               <CardContent className="p-4">
@@ -79,7 +89,7 @@ const ModernNewsGrid: React.FC<ModernNewsGridProps> = ({ articles, onArticleClic
             <Card 
               key={article.id}
               className="p-4 cursor-pointer hover:bg-muted/50 transition-colors duration-200"
-              onClick={() => onArticleClick?.(article)}
+              onClick={() => handleArticleClick(article)}
             >
               <div className="flex items-start gap-4">
                 <div className="w-20 h-16 bg-muted rounded flex-shrink-0" />

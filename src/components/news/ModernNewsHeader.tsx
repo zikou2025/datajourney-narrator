@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Bell, User, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SubscriptionModal from '../SubscriptionModal';
+import { useNavigate } from 'react-router-dom';
 
 interface ModernNewsHeaderProps {
   isSubscriber?: boolean;
@@ -13,6 +15,13 @@ const ModernNewsHeader: React.FC<ModernNewsHeaderProps> = ({
   isSubscriber = false, 
   showSubscriberBar = false 
 }) => {
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubscriptionSuccess = () => {
+    setIsSubscriptionModalOpen(false);
+    navigate('/dashboard');
+  };
   return (
     <div className="sticky top-0 z-50 bg-background">
       {/* Subscriber-only top bar */}
@@ -66,13 +75,23 @@ const ModernNewsHeader: React.FC<ModernNewsHeaderProps> = ({
               <Button variant="ghost" size="icon" className="h-9 w-9 lg:hidden">
                 <Menu className="h-4 w-4" />
               </Button>
-              <Button size="sm" className="hidden sm:flex">
+              <Button 
+                size="sm" 
+                className="hidden sm:flex"
+                onClick={() => setIsSubscriptionModalOpen(true)}
+              >
                 Subscribe
               </Button>
             </div>
           </div>
         </div>
       </header>
+      
+      <SubscriptionModal 
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        onSuccess={handleSubscriptionSuccess}
+      />
     </div>
   );
 };
