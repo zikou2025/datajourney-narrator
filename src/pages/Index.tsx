@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import ModernNewsHeader from "@/components/news/ModernNewsHeader";
 import ModernNewsGrid from "@/components/news/ModernNewsGrid";
 import ModernNewsSidebar from "@/components/news/ModernNewsSidebar";
@@ -17,28 +16,45 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { LogEntry } from '@/lib/types';
 
+// Lazy load components
+const LogMap = React.lazy(() => import('@/components/LogMap'));
+const LogTable = React.lazy(() => import('@/components/LogTable'));
+const LogTimeline = React.lazy(() => import('@/components/LogTimeline'));
+const TimeSeriesView = React.lazy(() => import('@/components/TimeSeriesView'));
+const StorytellingView = React.lazy(() => import('@/components/StorytellingView'));
+const TranscriptionQA = React.lazy(() => import('@/components/TranscriptionQA'));
+
 const Index = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa'>('dashboard');
-  const [transcriptionsData, setTranscriptionsData] = useState<any[]>([]);
-  const [isSubscriber] = useState(false); // TODO: Connect to actual subscription status
+  const [activeView, setActiveView] = useState('dashboard');
+  const [transcriptionsData, setTranscriptionsData] = useState([]);
+  const [isSubscriber] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Fetch data from Supabase
   useEffect(() => {
     const fetchTranscriptions = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const { data, error } = await supabase
           .from('transcriptions')
           .select('*');
         
         if (error) {
           console.error("Error fetching transcriptions:", error);
+          setError(error.message);
         } else {
           console.log("Transcriptions loaded:", data);
           setTranscriptionsData(data || []);
         }
       } catch (error) {
         console.error("Failed to fetch transcriptions:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -46,8 +62,9 @@ const Index = () => {
   }, []);
   
   // Process data for the components - ensure we always have valid objects
-  const logs: LogEntry[] = transcriptionsData.length > 0 
-    ? transcriptionsData.map(item => ({
+  const logs = React.useMemo(() => {
+    if (transcriptionsData.length > 0) {
+      return transcriptionsData.map(item => ({
         id: item.id,
         timestamp: item.created_at,
         activityType: item.title,
@@ -60,17 +77,49 @@ const Index = () => {
         material: "",
         measurement: "",
         referenceId: item.id
-      }))
-    : mockLogs || [];
+      }));
+    }
+    return mockLogs || [];
+  }, [transcriptionsData]);
   
-  const categories = getCategoryCounts(logs) || {};
-  const recentArticles = getRecentLogs(logs, 7);
-  const trendingArticles = getTrendingLogs(logs);
+  const categories = React.useMemo(() => getCategoryCounts(logs) || {}, [logs]);
+  const recentArticles = React.useMemo(() => getRecentLogs(logs, 7), [logs]);
+  const trendingArticles = React.useMemo(() => getTrendingLogs(logs), [logs]);
 
-  const handleArticleClick = (article: LogEntry) => {
+  const handleArticleClick = (article) => {
     console.log('Article clicked:', article);
     // TODO: Navigate to article detail page
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <h2 className="text-xl font-semibold mb-2">Error loading data</h2>
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Determine which view to show based on activeView
   const renderActiveView = () => {
@@ -97,26 +146,53 @@ const Index = () => {
       );
     } 
     
-    // For non-dashboard views, import and use the appropriate component
+    // For non-dashboard views, use lazy loaded components
+    const LoadingFallback = ({ message }) => (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p>{message}</p>
+        </div>
+      </div>
+    );
+
     switch(activeView) {
       case 'map':
-        const LogMap = React.lazy(() => import('@/components/LogMap'));
-        return <React.Suspense fallback={<div>Loading map view...</div>}><LogMap logs={logs} selectedLocation={null} setSelectedLocation={() => {}} /></React.Suspense>;
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading map view..." />}>
+            <LogMap logs={logs} selectedLocation={null} setSelectedLocation={() => {}} />
+          </Suspense>
+        );
       case 'list':
-        const LogTable = React.lazy(() => import('@/components/LogTable'));
-        return <React.Suspense fallback={<div>Loading list view...</div>}><LogTable logs={logs} onSelectLog={() => {}} /></React.Suspense>;
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading list view..." />}>
+            <LogTable logs={logs} onSelectLog={() => {}} />
+          </Suspense>
+        );
       case 'timeline':
-        const LogTimeline = React.lazy(() => import('@/components/LogTimeline'));
-        return <React.Suspense fallback={<div>Loading timeline view...</div>}><LogTimeline logs={logs} onSelectLog={() => {}} /></React.Suspense>;
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading timeline view..." />}>
+            <LogTimeline logs={logs} onSelectLog={() => {}} />
+          </Suspense>
+        );
       case 'timeseries':
-        const TimeSeriesView = React.lazy(() => import('@/components/TimeSeriesView'));
-        return <React.Suspense fallback={<div>Loading time series view...</div>}><TimeSeriesView logs={logs} /></React.Suspense>;
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading time series view..." />}>
+            <TimeSeriesView logs={logs} />
+          </Suspense>
+        );
       case 'story':
-        const StorytellingView = React.lazy(() => import('@/components/StorytellingView'));
-        return <React.Suspense fallback={<div>Loading story view...</div>}><StorytellingView logs={logs} /></React.Suspense>;
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading story view..." />}>
+            <StorytellingView logs={logs} />
+          </Suspense>
+        );
       case 'qa':
-        const TranscriptionQA = React.lazy(() => import('@/components/TranscriptionQA'));
-        return <React.Suspense fallback={<div>Loading Q&A view...</div>}><TranscriptionQA logs={logs} /></React.Suspense>;
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading Q&A view..." />}>
+            <TranscriptionQA logs={logs} />
+          </Suspense>
+        );
       default:
         return null;
     }
