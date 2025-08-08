@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Bell, User, Menu, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SubscriptionModal from '../SubscriptionModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface ModernNewsHeaderProps {
   isSubscriber?: boolean;
@@ -47,20 +47,20 @@ const ModernNewsHeader: React.FC<ModernNewsHeaderProps> = ({
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-8">
-              <a href="/" className="flex items-center gap-2">
+              <Link to="/" className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-sm">CN</span>
                 </div>
                 <span className="text-xl font-bold text-foreground">ConstructNews</span>
-              </a>
+              </Link>
               
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-6">
-                <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Latest</a>
-                <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Industry</a>
-                <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Technology</a>
-                <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Markets</a>
-                <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Analysis</a>
+                <button className="text-sm font-medium hover:text-primary transition-colors">Latest</button>
+                <button className="text-sm font-medium hover:text-primary transition-colors">Industry</button>
+                <button className="text-sm font-medium hover:text-primary transition-colors">Technology</button>
+                <button className="text-sm font-medium hover:text-primary transition-colors">Markets</button>
+                <button className="text-sm font-medium hover:text-primary transition-colors">Analysis</button>
               </nav>
             </div>
             

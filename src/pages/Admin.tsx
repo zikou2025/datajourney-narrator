@@ -84,17 +84,13 @@ const Admin: React.FC = () => {
           </div>
           
           <nav className="space-y-1">
-            <Button variant="ghost" className="w-full justify-start" asChild>
-              <a href="#content" className="flex items-center">
-                <FileText className="mr-2 h-4 w-4" />
-                Content Management
-              </a>
+            <Button variant="ghost" className="w-full justify-start">
+              <FileText className="mr-2 h-4 w-4" />
+              Content Management
             </Button>
-            <Button variant="ghost" className="w-full justify-start" asChild>
-              <a href="#transcription" className="flex items-center">
-                <FileText className="mr-2 h-4 w-4" />
-                Transcription Tools
-              </a>
+            <Button variant="ghost" className="w-full justify-start">
+              <FileText className="mr-2 h-4 w-4" />
+              Transcription Tools
             </Button>
             <Button variant="ghost" className="w-full justify-start">
               <Users className="mr-2 h-4 w-4" />

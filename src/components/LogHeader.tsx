@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import {
   BarChart3,
@@ -50,7 +51,7 @@ const LogHeader: React.FC<LogHeaderProps> = ({
     <header className="border-b bg-background sticky top-0 z-10">
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 hidden md:flex">
-          <a className="mr-6 flex items-center space-x-2" href="/">
+          <Link className="mr-6 flex items-center space-x-2" to="/">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -67,7 +68,7 @@ const LogHeader: React.FC<LogHeaderProps> = ({
               <path d="M11.5 14H16.5"></path>
             </svg>
             <span className="font-bold">ActivityLog</span>
-          </a>
+          </Link>
         </div>
         <div className="flex items-center space-x-1.5">
           <NavButton

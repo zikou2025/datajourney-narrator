@@ -28,9 +28,9 @@ const IndexFooter: React.FC<IndexFooterProps> = ({ categories = {} }) => {
               {Object.keys(categoriesList).length > 0 ? (
                 Object.keys(categoriesList).slice(0, 5).map(category => (
                   <li key={category}>
-                    <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                    <button className="text-muted-foreground hover:text-foreground transition-colors">
                       {category}
-                    </a>
+                    </button>
                   </li>
                 ))
               ) : (
