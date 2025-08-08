@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Bell, User, Menu } from "lucide-react";
+import { Search, Bell, User, Menu, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SubscriptionModal from '../SubscriptionModal';
 import { useNavigate } from 'react-router-dom';
@@ -69,18 +69,40 @@ const ModernNewsHeader: React.FC<ModernNewsHeaderProps> = ({
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Search className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <User className="h-4 w-4" />
+              
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9"
+                onClick={() => navigate('/admin')}
+                title="Admin Dashboard"
+              >
+                <Shield className="h-4 w-4" />
               </Button>
+              
+              {!isSubscriber && (
+                <Button 
+                  size="sm" 
+                  className="hidden sm:flex"
+                  onClick={() => setIsSubscriptionModalOpen(true)}
+                >
+                  Subscribe
+                </Button>
+              )}
+              
+              {isSubscriber && (
+                <>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Bell className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <User className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+              
               <Button variant="ghost" size="icon" className="h-9 w-9 lg:hidden">
                 <Menu className="h-4 w-4" />
-              </Button>
-              <Button 
-                size="sm" 
-                className="hidden sm:flex"
-                onClick={() => setIsSubscriptionModalOpen(true)}
-              >
-                Subscribe
               </Button>
             </div>
           </div>

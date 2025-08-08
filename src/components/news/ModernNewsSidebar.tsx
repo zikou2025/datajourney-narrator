@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, Clock, MapPin } from "lucide-react";
 import { LogEntry } from '@/lib/types';
 import { formatNewsDate, getExcerpt } from '@/lib/newsUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface ModernNewsSidebarProps {
   trendingArticles: LogEntry[];
@@ -19,6 +20,15 @@ const ModernNewsSidebar: React.FC<ModernNewsSidebarProps> = ({
   categories,
   onArticleClick
 }) => {
+  const navigate = useNavigate();
+
+  const handleArticleClick = (article: LogEntry) => {
+    if (onArticleClick) {
+      onArticleClick(article);
+    } else {
+      navigate(`/news/${article.id}`);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Trending Stories */}
@@ -34,7 +44,7 @@ const ModernNewsSidebar: React.FC<ModernNewsSidebarProps> = ({
             <div 
               key={article.id}
               className="flex items-start gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
-              onClick={() => onArticleClick?.(article)}
+              onClick={() => handleArticleClick(article)}
             >
               <span className="text-lg font-bold text-primary w-6">
                 {index + 1}
@@ -66,7 +76,7 @@ const ModernNewsSidebar: React.FC<ModernNewsSidebarProps> = ({
             <div 
               key={article.id}
               className="cursor-pointer hover:bg-muted/50 p-2 rounded transition-colors"
-              onClick={() => onArticleClick?.(article)}
+              onClick={() => handleArticleClick(article)}
             >
               <Badge variant="outline" className="text-xs mb-1">
                 {article.activityCategory}
