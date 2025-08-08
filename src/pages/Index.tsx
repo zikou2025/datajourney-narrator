@@ -71,7 +71,7 @@ const Index = () => {
         activityCategory: "Transcription",
         notes: item.full_text || "",
         location: "Online",
-        status: "completed",
+        status: "completed" as const,
         equipment: "",
         personnel: "",
         material: "",
@@ -208,7 +208,7 @@ const Index = () => {
         />
       ) : (
         <LogHeader 
-          activeView={activeView}
+          activeView={activeView as any}
           setActiveView={setActiveView}
           setSearchOpen={setSearchOpen}
         />
