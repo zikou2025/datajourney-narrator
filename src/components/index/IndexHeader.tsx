@@ -43,10 +43,10 @@ const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setS
             <Button 
               variant="outline"
               size="sm"
-              onClick={() => window.location.href = '/?view=map'}
+              onClick={() => window.location.href = '/?view=dashboard'}
               className="text-white border-white/30 hover:bg-white/10"
             >
-              Analytics Views
+              Dashboard Views
             </Button>
           </div>
         </div>
