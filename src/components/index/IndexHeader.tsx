@@ -40,6 +40,14 @@ const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setS
             <Button className="bg-primary hover:bg-primary/90" asChild>
               <Link to="/dashboard">Subscribe</Link>
             </Button>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '/?view=map'}
+              className="text-white border-white/30 hover:bg-white/10"
+            >
+              Analytics Views
+            </Button>
           </div>
         </div>
         

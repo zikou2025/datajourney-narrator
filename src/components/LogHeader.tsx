@@ -11,12 +11,13 @@ import {
   LineChart,
   BookOpen,
   Brain,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LogHeaderProps {
-  activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa';
-  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa') => void;
+  activeView: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa' | 'network';
+  setActiveView: (view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa' | 'network') => void;
   setSearchOpen: (isOpen: boolean) => void;
 }
 
@@ -30,7 +31,7 @@ const LogHeader: React.FC<LogHeaderProps> = ({
     icon,
     label,
   }: {
-    view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa';
+    view: 'dashboard' | 'map' | 'list' | 'timeline' | 'timeseries' | 'story' | 'narrative' | 'qa' | 'network';
     icon: React.ReactNode;
     label: string;
   }) => (
@@ -105,6 +106,11 @@ const LogHeader: React.FC<LogHeaderProps> = ({
             view="qa"
             icon={<Brain className="h-4 w-4" />}
             label="Q&A"
+          />
+          <NavButton
+            view="network"
+            icon={<Network className="h-4 w-4" />}
+            label="Network"
           />
         </div>
         <div className="ml-auto flex items-center space-x-2">

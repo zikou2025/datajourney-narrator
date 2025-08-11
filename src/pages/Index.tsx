@@ -26,6 +26,7 @@ const LogTimeline = React.lazy(() => import('@/components/LogTimeline'));
 const TimeSeriesView = React.lazy(() => import('@/components/TimeSeriesView'));
 const StorytellingView = React.lazy(() => import('@/components/StorytellingView'));
 const TranscriptionQA = React.lazy(() => import('@/components/TranscriptionQA'));
+const NetworkVisualization = React.lazy(() => import('@/components/NetworkVisualization'));
 
 const Index = () => {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -35,6 +36,15 @@ const Index = () => {
   const [isSubscriber] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Check URL params for view switching
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get('view');
+    if (viewParam && ['dashboard', 'map', 'list', 'timeline', 'timeseries', 'story', 'qa', 'network'].includes(viewParam)) {
+      setActiveView(viewParam);
+    }
+  }, []);
   
   // Fetch data from Supabase
   useEffect(() => {
@@ -268,6 +278,12 @@ const Index = () => {
         return (
           <Suspense fallback={<LoadingFallback message="Loading Q&A view..." />}>
             <TranscriptionQA logs={logs} />
+          </Suspense>
+        );
+      case 'network':
+        return (
+          <Suspense fallback={<LoadingFallback message="Loading network view..." />}>
+            <NetworkVisualization logs={logs} />
           </Suspense>
         );
       default:
