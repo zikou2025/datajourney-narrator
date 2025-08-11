@@ -18,6 +18,7 @@ import {
 } from "@/lib/newsUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { LogEntry } from '@/lib/types';
+import { useLocation } from 'react-router-dom';
 
 // Lazy load components
 const LogMap = React.lazy(() => import('@/components/LogMap'));
@@ -36,15 +37,15 @@ const Index = () => {
   const [isSubscriber] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const location = useLocation();
   // Check URL params for view switching
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.search);
     const viewParam = urlParams.get('view');
     if (viewParam && ['dashboard', 'map', 'list', 'timeline', 'timeseries', 'story', 'qa', 'network'].includes(viewParam)) {
-      setActiveView(viewParam);
+      setActiveView(viewParam as any);
     }
-  }, []);
+  }, [location.search]);
   
   // Fetch data from Supabase
   useEffect(() => {

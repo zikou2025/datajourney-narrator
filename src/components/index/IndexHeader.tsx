@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -11,6 +11,10 @@ export interface IndexHeaderProps {
 }
 
 const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setSearchOpen }) => {
+  const location = useLocation();
+  const search = new URLSearchParams(location.search);
+  search.set('view','dashboard');
+  const dashboardViewsTo = { pathname: '/', search: `?${search.toString()}` } as const;
   return (
     <header className="border-b bg-black text-white">
       <div className="container mx-auto px-4 py-4">
@@ -43,10 +47,10 @@ const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setS
             <Button 
               variant="outline"
               size="sm"
-              onClick={() => window.location.href = '/?view=dashboard'}
+              asChild
               className="text-white border-white/30 hover:bg-white/10"
             >
-              Dashboard Views
+              <Link to={dashboardViewsTo}>Dashboard Views</Link>
             </Button>
           </div>
         </div>
