@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import NewsDetail from "./pages/NewsDetail";
+import NewsLanding from "./pages/NewsLanding";
 import Admin from "./pages/Admin";
 
 // Create QueryClient outside component to prevent recreation
@@ -29,8 +30,9 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/news" element={<NewsLanding />} />
             <Route path="/news/:id" element={<NewsDetail />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

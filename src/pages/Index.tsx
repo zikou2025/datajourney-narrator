@@ -3,6 +3,9 @@ import ModernNewsHeader from "@/components/news/ModernNewsHeader";
 import ModernNewsGrid from "@/components/news/ModernNewsGrid";
 import ModernNewsSidebar from "@/components/news/ModernNewsSidebar";
 import LogHeader from "@/components/LogHeader";
+import IndexHeader from "@/components/index/IndexHeader";
+import IndexFooter from "@/components/index/IndexFooter";
+import IndexFeaturedContent from "@/components/index/IndexFeaturedContent";
 import { mockLogs } from "@/lib/mockLogs";
 import { 
   formatNewsDate, 
@@ -27,6 +30,7 @@ const TranscriptionQA = React.lazy(() => import('@/components/TranscriptionQA'))
 const Index = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState<'featured' | 'latest' | 'trending' | 'locations'>('featured');
   const [transcriptionsData, setTranscriptionsData] = useState([]);
   const [isSubscriber] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -85,6 +89,7 @@ const Index = () => {
   const categories = React.useMemo(() => getCategoryCounts(logs) || {}, [logs]);
   const recentArticles = React.useMemo(() => getRecentLogs(logs, 7), [logs]);
   const trendingArticles = React.useMemo(() => getTrendingLogs(logs), [logs]);
+  const featuredArticle = React.useMemo(() => getFeaturedArticle(logs), [logs]);
 
   const handleArticleClick = (article) => {
     console.log('Article clicked:', article);
@@ -121,28 +126,100 @@ const Index = () => {
     );
   }
 
+  // Render content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'featured':
+        return (
+          <IndexFeaturedContent
+            featuredArticle={featuredArticle}
+            logs={logs}
+            categories={categories}
+            formatNewsDate={formatNewsDate}
+            getExcerpt={getExcerpt}
+          />
+        );
+      case 'latest':
+        return (
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <ModernNewsGrid 
+                  articles={recentArticles}
+                  onArticleClick={handleArticleClick}
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <ModernNewsSidebar 
+                  trendingArticles={trendingArticles}
+                  recentArticles={recentArticles}
+                  categories={categories}
+                  onArticleClick={handleArticleClick}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      case 'trending':
+        return (
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <ModernNewsGrid 
+                  articles={trendingArticles}
+                  onArticleClick={handleArticleClick}
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <ModernNewsSidebar 
+                  trendingArticles={trendingArticles}
+                  recentArticles={recentArticles}
+                  categories={categories}
+                  onArticleClick={handleArticleClick}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <ModernNewsGrid 
+                  articles={logs}
+                  onArticleClick={handleArticleClick}
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <ModernNewsSidebar 
+                  trendingArticles={trendingArticles}
+                  recentArticles={recentArticles}
+                  categories={categories}
+                  onArticleClick={handleArticleClick}
+                />
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
   // Determine which view to show based on activeView
   const renderActiveView = () => {
     if (activeView === 'dashboard') {
       return (
-        <div className="container mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <ModernNewsGrid 
-                articles={logs}
-                onArticleClick={handleArticleClick}
-              />
-            </div>
-            <div className="lg:col-span-1">
-              <ModernNewsSidebar 
-                trendingArticles={trendingArticles}
-                recentArticles={recentArticles}
-                categories={categories}
-                onArticleClick={handleArticleClick}
-              />
-            </div>
-          </div>
-        </div>
+        <>
+          <IndexHeader 
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            setSearchOpen={setSearchOpen}
+          />
+          <main className="container mx-auto px-4 py-8">
+            {renderTabContent()}
+          </main>
+          <IndexFooter categories={categories} />
+        </>
       );
     } 
     
@@ -200,21 +277,18 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Show subscriber bar only for subscribers */}
       {activeView === 'dashboard' ? (
-        <ModernNewsHeader 
-          isSubscriber={isSubscriber}
-          showSubscriberBar={isSubscriber}
-        />
+        renderActiveView()
       ) : (
-        <LogHeader 
-          activeView={activeView as any}
-          setActiveView={setActiveView}
-          setSearchOpen={setSearchOpen}
-        />
+        <>
+          <LogHeader 
+            activeView={activeView as any}
+            setActiveView={setActiveView}
+            setSearchOpen={setSearchOpen}
+          />
+          {renderActiveView()}
+        </>
       )}
-      
-      {renderActiveView()}
     </div>
   );
 };

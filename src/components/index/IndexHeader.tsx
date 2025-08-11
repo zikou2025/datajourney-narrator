@@ -32,9 +32,14 @@ const IndexHeader: React.FC<IndexHeaderProps> = ({ activeTab, setActiveTab, setS
               Search Archives
             </Button>
             <Button variant="outline" size="sm" asChild className="text-white border-white/30 hover:bg-white/10">
+              <Link to="/news">News Portal</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="text-white border-white/30 hover:bg-white/10">
               <Link to="/admin">Admin Access</Link>
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">Subscribe</Button>
+            <Button className="bg-primary hover:bg-primary/90" asChild>
+              <Link to="/dashboard">Subscribe</Link>
+            </Button>
           </div>
         </div>
         
